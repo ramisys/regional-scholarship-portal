@@ -1,0 +1,368 @@
+import React, { useEffect, useState } from 'react';
+import api, { handleApiError } from '../../utils/api';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../../components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../../components/ui/dialog';
+import { Badge } from '../../components/ui/badge';
+import { toast } from 'sonner';
+import { Search, Eye, CheckCircle, XCircle, FileText } from 'lucide-react';
+
+interface Application {
+  id: string;
+  applicantName: string;
+  email: string;
+  region: string;
+  submittedDate: string;
+  status: 'pending' | 'approved' | 'rejected';
+  documents: Document[];
+}
+
+interface Document {
+  id: string;
+  fileName: string;
+  fileUrl: string;
+  fileType: string;
+}
+
+export const ApplicationManagement: React.FC = () => {
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [filteredApplications, setFilteredApplications] = useState<Application[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [regionFilter, setRegionFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
+
+  useEffect(() => {
+    fetchApplications();
+  }, []);
+
+  useEffect(() => {
+    filterApplications();
+  }, [searchTerm, regionFilter, statusFilter, applications]);
+
+  const fetchApplications = async () => {
+    try {
+      const response = await api.get('/dashboard/applications');
+      const applicationsData = response.data?.data ?? [];
+      setApplications(applicationsData);
+      setFilteredApplications(applicationsData);
+    } catch (err) {
+      setError(handleApiError(err));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const filterApplications = () => {
+    let filtered = applications;
+
+    if (searchTerm) {
+      filtered = filtered.filter(
+        (app) =>
+          app.applicantName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          app.email.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    if (regionFilter !== 'all') {
+      filtered = filtered.filter((app) => app.region === regionFilter);
+    }
+
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter((app) => app.status === statusFilter);
+    }
+
+    setFilteredApplications(filtered);
+  };
+
+  const handleViewDetails = (application: Application) => {
+    setSelectedApplication(application);
+    setShowDetailsModal(true);
+  };
+
+  const handleApprove = async (applicationId: string) => {
+    setActionLoading(true);
+    try {
+      await api.patch(`/dashboard/applications/${applicationId}/status`, {
+        status: 'approved',
+        notes: 'Application approved by coordinator',
+      });
+      toast.success('Application approved successfully');
+      setApplications((prev) =>
+        prev.map((app) =>
+          app.id === applicationId ? { ...app, status: 'approved' as const } : app
+        )
+      );
+      setShowDetailsModal(false);
+    } catch (err) {
+      toast.error(handleApiError(err));
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleReject = async (applicationId: string) => {
+    setActionLoading(true);
+    try {
+      await api.patch(`/dashboard/applications/${applicationId}/status`, {
+        status: 'rejected',
+        notes: 'Application rejected by coordinator',
+      });
+      toast.success('Application rejected');
+      setApplications((prev) =>
+        prev.map((app) =>
+          app.id === applicationId ? { ...app, status: 'rejected' as const } : app
+        )
+      );
+      setShowDetailsModal(false);
+    } catch (err) {
+      toast.error(handleApiError(err));
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    const variants: Record<string, string> = {
+      pending: 'bg-yellow-100 text-yellow-700',
+      approved: 'bg-green-100 text-green-700',
+      rejected: 'bg-red-100 text-red-700',
+    };
+
+    return (
+      <Badge className={variants[status] || variants.pending}>
+        {status.charAt(0).toUpperCase() + status.slice(1)}
+      </Badge>
+    );
+  };
+
+  const uniqueRegions = Array.from(new Set(applications.map((app) => app.region)));
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent"></div>
+          <p className="mt-4">Loading applications...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-7xl mx-auto p-6 space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">Application Management</h1>
+        <p className="text-gray-600 mt-1">Review and manage scholarship applications</p>
+      </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+          {error}
+        </div>
+      )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Filter Applications</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Search by name or email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Select value={regionFilter} onValueChange={setRegionFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Filter by region" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Regions</SelectItem>
+                {uniqueRegions.map((region) => (
+                  <SelectItem key={region} value={region}>
+                    {region}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="approved">Approved</SelectItem>
+                <SelectItem value="rejected">Rejected</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Applicant Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Region</TableHead>
+                <TableHead>Submitted Date</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredApplications.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                    No applications found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredApplications.map((application) => (
+                  <TableRow key={application.id}>
+                    <TableCell className="font-medium">{application.applicantName}</TableCell>
+                    <TableCell>{application.email}</TableCell>
+                    <TableCell>{application.region}</TableCell>
+                    <TableCell>
+                      {new Date(application.submittedDate).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>{getStatusBadge(application.status)}</TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleViewDetails(application)}
+                      >
+                        <Eye className="mr-2 h-4 w-4" />
+                        View
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <Dialog open={showDetailsModal} onOpenChange={setShowDetailsModal}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Application Details</DialogTitle>
+            <DialogDescription>
+              Review application information and documents
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedApplication && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-500">Applicant Name</p>
+                  <p className="font-medium">{selectedApplication.applicantName}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Email</p>
+                  <p className="font-medium">{selectedApplication.email}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Region</p>
+                  <p className="font-medium">{selectedApplication.region}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Submitted Date</p>
+                  <p className="font-medium">
+                    {new Date(selectedApplication.submittedDate).toLocaleDateString()}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Status</p>
+                  {getStatusBadge(selectedApplication.status)}
+                </div>
+              </div>
+
+              <div>
+                <h4 className="font-medium mb-3">Uploaded Documents</h4>
+                {(selectedApplication.documents ?? []).length === 0 ? (
+                  <p className="text-gray-500 text-sm">No documents uploaded</p>
+                ) : (
+                  <div className="space-y-2">
+                    {(selectedApplication.documents ?? []).map((doc) => (
+                      <div
+                        key={doc.id}
+                        className="flex items-center justify-between p-3 border rounded"
+                      >
+                        <div className="flex items-center gap-3">
+                          <FileText className="h-5 w-5 text-blue-500" />
+                          <span className="font-medium">{doc.fileName}</span>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => window.open(doc.fileUrl, '_blank')}
+                        >
+                          View
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2">
+            {selectedApplication?.status === 'pending' && (
+              <>
+                <Button
+                  variant="destructive"
+                  onClick={() => handleReject(selectedApplication.id)}
+                  disabled={actionLoading}
+                >
+                  <XCircle className="mr-2 h-4 w-4" />
+                  Reject
+                </Button>
+                <Button
+                  onClick={() => handleApprove(selectedApplication.id)}
+                  disabled={actionLoading}
+                >
+                  <CheckCircle className="mr-2 h-4 w-4" />
+                  Approve
+                </Button>
+              </>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
