@@ -1,0 +1,49 @@
+# Node / Vite
+node_modules/
+dist/
+vite.svg
+.vite/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment files
+.env
+.env.*
+!.env.example
+backend/.env
+backend/.env.*
+!backend/.env.example
+
+# Python / Django
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.python-version
+.venv/
+venv/
+env/
+ENV/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Django runtime artifacts
+backend/db.sqlite3
+backend/media/
+backend/staticfiles/
+backend/static/
+
+# Tooling / OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
