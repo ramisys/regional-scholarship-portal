@@ -36,7 +36,7 @@ export const Sidebar = () => {
   };
 
   return (
-    <aside className="hidden md:flex w-64 shrink-0 border-r border-gray-200 bg-white flex-col">
+    <aside className="hidden md:sticky md:top-0 md:flex h-dvh w-64 shrink-0 border-r border-gray-200 bg-white flex-col overflow-y-auto">
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center gap-2">
           <GraduationCap className="h-8 w-8 text-blue-600" />
