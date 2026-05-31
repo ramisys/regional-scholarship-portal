@@ -7,6 +7,7 @@ import { Input } from '../../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Badge } from '../../components/ui/badge';
 import { Clock, CheckCircle, XCircle, Eye, Search } from 'lucide-react';
+import { ProgressIndicator } from '../../components/common/ProgressIndicator';
 
 interface Application {
   id: string;
@@ -102,13 +103,18 @@ export const ApplicationTracking: React.FC = () => {
   };
 
   const getProgressSteps = (status: string) => {
-    const steps = [
-      { label: 'Submitted', active: true },
-      { label: 'Under Review', active: status !== 'pending' },
-      { label: status === 'approved' ? 'Approved' : status === 'rejected' ? 'Rejected' : 'Decision', active: status !== 'pending' },
+    return [
+      { label: 'Submitted' },
+      { label: 'Under Review' },
+      {
+        label:
+          status === 'approved' ? 'Approved' : status === 'rejected' ? 'Rejected' : 'Decision',
+      },
     ];
+  };
 
-    return steps;
+  const getCurrentStep = (status: string) => {
+    return status === 'pending' ? 0 : 2;
   };
 
   if (isLoading) {
@@ -203,27 +209,10 @@ export const ApplicationTracking: React.FC = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center justify-between">
-                  {getProgressSteps(application.status).map((step, index) => (
-                    <React.Fragment key={index}>
-                      <div className="flex flex-col items-center">
-                        <div
-                          className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                            step.active ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-500'
-                          }`}
-                        >
-                          {index + 1}
-                        </div>
-                        <p className={`text-sm mt-2 ${step.active ? 'font-medium' : 'text-gray-500'}`}>
-                          {step.label}
-                        </p>
-                      </div>
-                      {index < getProgressSteps(application.status).length - 1 && (
-                        <div className={`flex-1 h-1 ${step.active ? 'bg-blue-500' : 'bg-gray-200'}`} />
-                      )}
-                    </React.Fragment>
-                  ))}
-                </div>
+                <ProgressIndicator
+                  steps={getProgressSteps(application.status)}
+                  currentStep={getCurrentStep(application.status)}
+                />
                 <p className="text-sm text-gray-500 mt-4">
                   Last updated: {new Date(application.lastUpdated).toLocaleString()}
                 </p>

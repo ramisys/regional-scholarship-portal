@@ -1,10 +1,11 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import api, { handleApiError } from '../../utils/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Progress } from '../../components/ui/progress';
 import { toast } from 'sonner';
-import { Upload, FileText, X } from 'lucide-react';
+import { FileText, X } from 'lucide-react';
+import { FileUploader } from '../../components/common/FileUploader';
 
 interface UploadedDocument {
   id: string;
@@ -32,8 +33,6 @@ export const DocumentUpload: React.FC = () => {
   const [documents, setDocuments] = useState<UploadedDocument[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [dragActive, setDragActive] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [activeApplicationId, setActiveApplicationId] = useState<string | null>(null);
   const [applicationTitle, setApplicationTitle] = useState('');
   const [loadingApplication, setLoadingApplication] = useState(true);
@@ -69,16 +68,6 @@ export const DocumentUpload: React.FC = () => {
     };
 
     fetchApplications();
-  }, []);
-
-  const handleDrag = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') {
-      setDragActive(true);
-    } else if (e.type === 'dragleave') {
-      setDragActive(false);
-    }
   }, []);
 
   const validateFile = (file: File): string | null => {
@@ -142,31 +131,25 @@ export const DocumentUpload: React.FC = () => {
     }
   };
 
-  const handleDrop = useCallback(async (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const file = e.dataTransfer.files[0];
-      await uploadFile(file);
-    }
-  }, []);
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      await uploadFile(file);
-      e.target.value = '';
-    }
-  };
-
-  const openFilePicker = () => {
-    if (uploading || loadingApplication || !activeApplicationId) {
+  const handleFilesSelected = (files: File[]) => {
+    if (loadingApplication) {
+      toast.error('Loading your application details. Please wait.');
       return;
     }
 
-    fileInputRef.current?.click();
+    if (!activeApplicationId) {
+      toast.error('Create a scholarship application before uploading documents.');
+      return;
+    }
+
+    if (uploading) {
+      toast.error('Please wait for the current upload to finish.');
+      return;
+    }
+
+    if (files[0]) {
+      uploadFile(files[0]);
+    }
   };
 
   const handleDelete = async (documentId: string) => {
@@ -199,31 +182,12 @@ export const DocumentUpload: React.FC = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div
-            className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-              dragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
-            }`}
-            onDragEnter={handleDrag}
-            onDragLeave={handleDrag}
-            onDragOver={handleDrag}
-            onDrop={handleDrop}
-          >
-            <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <p className="text-lg mb-2">Drag and drop your files here</p>
-            <p className="text-sm text-gray-500 mb-4">or</p>
-            <Button type="button" variant="outline" disabled={uploading || loadingApplication || !activeApplicationId} onClick={openFilePicker}>
-              Browse Files
-            </Button>
-            <input
-              ref={fileInputRef}
-              id="file-upload"
-              type="file"
-              className="hidden"
-              onChange={handleFileChange}
-              accept=".pdf,.jpg,.jpeg,.png"
-              disabled={uploading || loadingApplication || !activeApplicationId}
-            />
-          </div>
+          <FileUploader
+            onFileSelect={handleFilesSelected}
+            accept=".pdf,.jpg,.jpeg,.png"
+            maxSize={MAX_FILE_SIZE}
+            multiple={false}
+          />
 
           {uploading && (
             <div className="mt-4">
