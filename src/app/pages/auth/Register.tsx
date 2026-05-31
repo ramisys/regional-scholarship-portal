@@ -7,6 +7,7 @@ import { Label } from '../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { handleApiError } from '../../utils/api';
 import { GraduationCap } from 'lucide-react';
+import { ButtonLoader } from '../../components/loading';
 
 export const Register: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -100,6 +101,7 @@ export const Register: React.FC = () => {
                     onChange={(e) => handleChange('firstName', e.target.value)}
                     required
                     className="mt-1"
+                    disabled={isLoading}
                   />
                 </div>
                 <div>
@@ -111,6 +113,7 @@ export const Register: React.FC = () => {
                     onChange={(e) => handleChange('lastName', e.target.value)}
                     required
                     className="mt-1"
+                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -125,12 +128,17 @@ export const Register: React.FC = () => {
                   required
                   className="mt-1"
                   placeholder="you@example.com"
+                  disabled={isLoading}
                 />
               </div>
 
               <div>
                 <Label htmlFor="role">Account Type</Label>
-                <Select value={formData.role} onValueChange={(value) => handleChange('role', value)}>
+                <Select
+                  value={formData.role}
+                  onValueChange={(value) => handleChange('role', value)}
+                  disabled={isLoading}
+                >
                   <SelectTrigger className="mt-1">
                     <SelectValue />
                   </SelectTrigger>
@@ -151,6 +159,7 @@ export const Register: React.FC = () => {
                   required
                   className="mt-1"
                   placeholder="At least 8 characters"
+                    disabled={isLoading}
                 />
               </div>
 
@@ -163,12 +172,15 @@ export const Register: React.FC = () => {
                   onChange={(e) => handleChange('confirmPassword', e.target.value)}
                   required
                   className="mt-1"
+                    disabled={isLoading}
                 />
               </div>
             </div>
 
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Creating account...' : 'Create account'}
+              <ButtonLoader isLoading={isLoading} loadingLabel="Creating account...">
+                Create account
+              </ButtonLoader>
             </Button>
 
             <p className="text-center text-sm text-gray-600">

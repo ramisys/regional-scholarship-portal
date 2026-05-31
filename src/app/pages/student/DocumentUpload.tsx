@@ -2,12 +2,13 @@ import React, { useEffect, useState } from 'react';
 import api, { handleApiError } from '../../utils/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
-import { Progress } from '../../components/ui/progress';
 import { Badge } from '../../components/ui/badge';
+import { Skeleton } from '../../components/ui/skeleton';
 import { toast } from 'sonner';
 import { FileText, X } from 'lucide-react';
 import { FileUploader } from '../../components/common/FileUploader';
 import { EmptyState } from '../../components/ui/empty-state';
+import { LoadingErrorState, PageLoader, SkeletonCard, UploadProgressLoader } from '../../components/loading';
 
 interface UploadedDocument {
   id: string;
@@ -38,6 +39,7 @@ export const DocumentUpload: React.FC = () => {
   const [activeApplicationId, setActiveApplicationId] = useState<string | null>(null);
   const [applicationTitle, setApplicationTitle] = useState('');
   const [loadingApplication, setLoadingApplication] = useState(true);
+  const [applicationError, setApplicationError] = useState('');
 
   const unwrapData = <T,>(responseData: T | ApiEnvelope<T>) => {
     if (responseData && typeof responseData === 'object' && 'data' in responseData) {
@@ -48,29 +50,34 @@ export const DocumentUpload: React.FC = () => {
   };
 
   useEffect(() => {
-    const fetchApplications = async () => {
-      try {
-        const response = await api.get('/student/applications');
-        const applicationsData = unwrapData<StudentApplication[] | unknown>(response.data);
-        const list = Array.isArray(applicationsData) ? applicationsData : [];
-        const latestApplication = list[list.length - 1];
-
-        if (latestApplication?.id) {
-          setActiveApplicationId(String(latestApplication.id));
-          setApplicationTitle(latestApplication.title || 'your latest application');
-        } else {
-          setActiveApplicationId(null);
-          setApplicationTitle('');
-        }
-      } catch (err) {
-        toast.error(handleApiError(err));
-      } finally {
-        setLoadingApplication(false);
-      }
-    };
-
-    fetchApplications();
+    void fetchApplications();
   }, []);
+
+  const fetchApplications = async () => {
+    setLoadingApplication(true);
+    setApplicationError('');
+
+    try {
+      const response = await api.get('/student/applications');
+      const applicationsData = unwrapData<StudentApplication[] | unknown>(response.data);
+      const list = Array.isArray(applicationsData) ? applicationsData : [];
+      const latestApplication = list[list.length - 1];
+
+      if (latestApplication?.id) {
+        setActiveApplicationId(String(latestApplication.id));
+        setApplicationTitle(latestApplication.title || 'your latest application');
+      } else {
+        setActiveApplicationId(null);
+        setApplicationTitle('');
+      }
+    } catch (err) {
+      const message = handleApiError(err);
+      setApplicationError(message);
+      toast.error(message);
+    } finally {
+      setLoadingApplication(false);
+    }
+  };
 
   const validateFile = (file: File): string | null => {
     if (file.size > MAX_FILE_SIZE) {
@@ -113,7 +120,7 @@ export const DocumentUpload: React.FC = () => {
         },
       });
 
-      setDocuments((prev) => [
+      setDocuments((prev: UploadedDocument[]) => [
         ...prev,
         {
           id: String(response.data?.data?.id ?? `${Date.now()}-${Math.random()}`),
@@ -155,7 +162,7 @@ export const DocumentUpload: React.FC = () => {
   };
 
   const handleDelete = async (documentId: string) => {
-    setDocuments((prev) => prev.filter((doc) => doc.id !== documentId));
+    setDocuments((prev: UploadedDocument[]) => prev.filter((doc: UploadedDocument) => doc.id !== documentId));
     toast.success('Document removed from the list');
   };
 
@@ -176,6 +183,21 @@ export const DocumentUpload: React.FC = () => {
         )}
       </div>
 
+      {loadingApplication ? (
+        <PageLoader title="Loading document workspace" description="Checking your latest application">
+          <SkeletonCard />
+          <SkeletonCard />
+        </PageLoader>
+      ) : applicationError ? (
+        <LoadingErrorState
+          title="Unable to load application"
+          description={applicationError}
+          onRetry={() => {
+            void fetchApplications();
+          }}
+        />
+      ) : null}
+
       <Card>
         <CardHeader className="border-b">
           <CardTitle>Upload Documents</CardTitle>
@@ -189,15 +211,12 @@ export const DocumentUpload: React.FC = () => {
             accept=".pdf,.jpg,.jpeg,.png"
             maxSize={MAX_FILE_SIZE}
             multiple={false}
+            disabled={uploading || loadingApplication}
           />
 
           {uploading && (
             <div className="mt-4">
-              <div className="flex justify-between text-sm mb-2">
-                <span>Uploading...</span>
-                <span>{uploadProgress}%</span>
-              </div>
-              <Progress value={uploadProgress} />
+              <UploadProgressLoader progress={uploadProgress} statusText="Uploading document" />
             </div>
           )}
         </CardContent>
@@ -209,7 +228,22 @@ export const DocumentUpload: React.FC = () => {
           <CardDescription>Manage your uploaded documents</CardDescription>
         </CardHeader>
         <CardContent>
-          {documents.length === 0 ? (
+          {loadingApplication ? (
+            <div className="space-y-3" aria-busy="true" aria-live="polite">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <div key={index} className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 p-4">
+                  <div className="flex items-center space-x-4 flex-1">
+                    <Skeleton className="h-8 w-8 rounded-full" />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton className="h-4 w-48 max-w-full" />
+                      <Skeleton className="h-3 w-64 max-w-full" />
+                    </div>
+                  </div>
+                  <Skeleton className="h-8 w-20" />
+                </div>
+              ))}
+            </div>
+          ) : documents.length === 0 ? (
             <EmptyState
               icon={<FileText className="h-12 w-12" />}
               title="No documents uploaded yet"
@@ -217,7 +251,7 @@ export const DocumentUpload: React.FC = () => {
             />
           ) : (
             <div className="space-y-3">
-              {documents.map((doc) => (
+              {documents.map((doc: UploadedDocument) => (
                 <div
                   key={doc.id}
                   className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-gray-50 hover:bg-gray-100"

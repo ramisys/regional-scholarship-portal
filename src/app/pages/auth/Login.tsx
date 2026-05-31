@@ -6,6 +6,7 @@ import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { handleApiError } from '../../utils/api';
 import { GraduationCap } from 'lucide-react';
+import { ButtonLoader } from '../../components/loading';
 
 export const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -61,6 +62,7 @@ export const Login: React.FC = () => {
                   required
                   className="mt-1"
                   placeholder="you@example.com"
+                  disabled={isLoading}
                 />
               </div>
 
@@ -74,6 +76,7 @@ export const Login: React.FC = () => {
                   required
                   className="mt-1"
                   placeholder="Enter your password"
+                  disabled={isLoading}
                 />
               </div>
             </div>
@@ -85,7 +88,9 @@ export const Login: React.FC = () => {
             </div>
 
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Signing in...' : 'Sign in'}
+              <ButtonLoader isLoading={isLoading} loadingLabel="Signing in...">
+                Sign in
+              </ButtonLoader>
             </Button>
 
             <p className="text-center text-sm text-gray-600">

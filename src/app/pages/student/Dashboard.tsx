@@ -7,6 +7,7 @@ import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import { FileText, Upload, CheckCircle, Clock, XCircle, Plus } from 'lucide-react';
 import { EmptyState } from '../../components/ui/empty-state';
+import { LoadingErrorState, PageLoader, SkeletonCard } from '../../components/loading';
 
 interface ApplicationStats {
   total: number;
@@ -42,10 +43,13 @@ export const StudentDashboard: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchDashboardData();
+    void fetchDashboardData();
   }, []);
 
   const fetchDashboardData = async () => {
+    setIsLoading(true);
+    setError('');
+
     try {
       const [statsResponse, activityResponse] = await Promise.all([
         api.get('/student/stats'),
@@ -108,12 +112,29 @@ export const StudentDashboard: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <div className="text-center">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent"></div>
-          <p className="mt-4">Loading dashboard...</p>
+      <PageLoader title="Loading student dashboard" description="Fetching your application summary">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <SkeletonCard key={index} compact />
+          ))}
         </div>
-      </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
+      </PageLoader>
+    );
+  }
+
+  if (error) {
+    return (
+      <LoadingErrorState
+        title="Unable to load dashboard"
+        description={error}
+        onRetry={() => {
+          void fetchDashboardData();
+        }}
+      />
     );
   }
 

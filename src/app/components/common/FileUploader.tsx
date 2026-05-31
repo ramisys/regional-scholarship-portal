@@ -11,6 +11,7 @@ interface FileUploaderProps {
   multiple?: boolean;
   uploadedFiles?: Array<{ id: string; name: string; url: string }>;
   onRemove?: (id: string) => void;
+  disabled?: boolean;
 }
 
 export const FileUploader = ({
@@ -20,6 +21,7 @@ export const FileUploader = ({
   multiple = true,
   uploadedFiles = [],
   onRemove,
+  disabled = false,
 }: FileUploaderProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string>("");
@@ -66,12 +68,17 @@ export const FileUploader = ({
       <div
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
+        onDrop={disabled ? undefined : handleDrop}
         className={cn(
-          "border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer",
-          isDragging ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-gray-400",
+          "border-2 border-dashed rounded-lg p-8 text-center transition-colors",
+          disabled ? "cursor-not-allowed border-gray-200 bg-gray-50 opacity-70" : "cursor-pointer",
+          !disabled && (isDragging ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-gray-400"),
         )}
-        onClick={() => fileInputRef.current?.click()}
+        onClick={() => {
+          if (!disabled) {
+            fileInputRef.current?.click();
+          }
+        }}
       >
         <Upload className="h-10 w-10 mx-auto mb-4 text-gray-400" />
         <p className="mb-2 font-medium text-gray-700">
@@ -87,6 +94,7 @@ export const FileUploader = ({
           accept={accept}
           multiple={multiple}
           onChange={handleFileSelect}
+          disabled={disabled}
         />
       </div>
 

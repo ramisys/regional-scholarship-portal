@@ -5,6 +5,7 @@ import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import api, { handleApiError } from '../../utils/api';
 import { CheckCircle2, GraduationCap } from 'lucide-react';
+import { ButtonLoader } from '../../components/loading';
 
 export const ForgotPassword: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -80,11 +81,14 @@ export const ForgotPassword: React.FC = () => {
               required
               className="mt-1"
               placeholder="you@example.com"
+              disabled={isLoading || success}
             />
           </div>
 
           <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? 'Sending...' : 'Send reset instructions'}
+            <ButtonLoader isLoading={isLoading} loadingLabel="Sending...">
+              Send reset instructions
+            </ButtonLoader>
           </Button>
 
           <p className="text-center text-sm text-gray-600">

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
+import { FullScreenLoader } from './loading';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -11,14 +12,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowe
   const { user, isLoading } = useAuth();
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent"></div>
-          <p className="mt-4">Loading...</p>
-        </div>
-      </div>
-    );
+    return <FullScreenLoader title="Checking session" description="Verifying your access" />;
   }
 
   if (!user) {

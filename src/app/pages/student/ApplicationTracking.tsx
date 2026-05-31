@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Clock, CheckCircle, XCircle, Eye, Search, FileText } from 'lucide-react';
 import { ProgressIndicator } from '../../components/common/ProgressIndicator';
 import { EmptyState } from '../../components/ui/empty-state';
+import { LoadingErrorState, PageLoader, SkeletonCard, SkeletonTable } from '../../components/loading';
 
 interface Application {
   id: string;
@@ -33,7 +34,7 @@ export const ApplicationTracking: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
   useEffect(() => {
-    fetchApplications();
+    void fetchApplications();
   }, []);
 
   useEffect(() => {
@@ -49,6 +50,9 @@ export const ApplicationTracking: React.FC = () => {
   };
 
   const fetchApplications = async () => {
+    setIsLoading(true);
+    setError('');
+
     try {
       const response = await api.get('/student/applications');
       const applicationsData = unwrapData<Application[] | unknown>(response.data);
@@ -127,9 +131,13 @@ export const ApplicationTracking: React.FC = () => {
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-          {error}
-        </div>
+        <LoadingErrorState
+          title="Unable to load applications"
+          description={error}
+          onRetry={() => {
+            void fetchApplications();
+          }}
+        />
       )}
 
       <Card>
@@ -146,11 +154,12 @@ export const ApplicationTracking: React.FC = () => {
                   placeholder="Search by title or region..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  disabled={isLoading}
                   className="pl-10"
                 />
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="sm:w-48">
+                <SelectTrigger className="sm:w-48" disabled={isLoading}>
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -165,10 +174,13 @@ export const ApplicationTracking: React.FC = () => {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="text-center py-8">
-              <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent"></div>
-              <p className="mt-4 text-sm text-gray-500">Loading applications...</p>
-            </div>
+            <PageLoader title="Loading applications" description="Fetching your applications and timeline">
+              <SkeletonTable columns={6} rows={4} />
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                <SkeletonCard compact />
+                <SkeletonCard compact />
+              </div>
+            </PageLoader>
           ) : filteredApplications.length === 0 ? (
             <EmptyState
               icon={<FileText className="h-12 w-12" />}

@@ -43,14 +43,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const storedToken = localStorage.getItem('token');
-    const storedUser = localStorage.getItem('user');
+    let isMounted = true;
 
-    if (storedToken && storedUser) {
+    const bootstrapAuth = async () => {
+      const storedToken = localStorage.getItem('token');
+
+      if (!storedToken) {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+        return;
+      }
+
       setToken(storedToken);
-      setUser(JSON.parse(storedUser));
-    }
-    setIsLoading(false);
+
+      try {
+        const response = await api.get('/auth/profile');
+        const profile = response.data?.data ?? response.data;
+
+        if (isMounted) {
+          setUser(profile);
+          localStorage.setItem('user', JSON.stringify(profile));
+        }
+      } catch (error) {
+        if (isMounted) {
+          setUser(null);
+          setToken(null);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    void bootstrapAuth();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const login = async (email: string, password: string) => {

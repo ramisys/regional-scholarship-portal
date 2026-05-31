@@ -24,6 +24,7 @@ import { Badge } from '../../components/ui/badge';
 import { toast } from 'sonner';
 import { Filter, Search, Eye, CheckCircle, XCircle, FileText } from 'lucide-react';
 import { EmptyState } from '../../components/ui/empty-state';
+import { ButtonLoader, LoadingErrorState, PageLoader, SkeletonCard, SkeletonTable } from '../../components/loading';
 
 interface Application {
   id: string;
@@ -55,7 +56,7 @@ export const ApplicationManagement: React.FC = () => {
   const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
-    fetchApplications();
+    void fetchApplications();
   }, []);
 
   useEffect(() => {
@@ -63,6 +64,9 @@ export const ApplicationManagement: React.FC = () => {
   }, [searchTerm, regionFilter, statusFilter, applications]);
 
   const fetchApplications = async () => {
+    setIsLoading(true);
+    setError('');
+
     try {
       const response = await api.get('/dashboard/applications');
       const applicationsData = response.data?.data ?? [];
@@ -168,9 +172,13 @@ export const ApplicationManagement: React.FC = () => {
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-          {error}
-        </div>
+        <LoadingErrorState
+          title="Unable to load applications"
+          description={error}
+          onRetry={() => {
+            void fetchApplications();
+          }}
+        />
       )}
 
       <Card>
@@ -187,11 +195,12 @@ export const ApplicationManagement: React.FC = () => {
                   placeholder="Search by name or email..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  disabled={isLoading}
                   className="pl-10"
                 />
               </div>
               <Select value={regionFilter} onValueChange={setRegionFilter}>
-                <SelectTrigger className="sm:w-48">
+                <SelectTrigger className="sm:w-48" disabled={isLoading}>
                   <SelectValue placeholder="Filter by region" />
                 </SelectTrigger>
                 <SelectContent>
@@ -204,7 +213,7 @@ export const ApplicationManagement: React.FC = () => {
                 </SelectContent>
               </Select>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="sm:w-48">
+                <SelectTrigger className="sm:w-48" disabled={isLoading}>
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -219,10 +228,17 @@ export const ApplicationManagement: React.FC = () => {
         </CardHeader>
         <CardContent className="p-0">
           {isLoading ? (
-            <div className="text-center py-8">
-              <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent"></div>
-              <p className="mt-4 text-sm text-gray-500">Loading applications...</p>
-            </div>
+            <PageLoader title="Loading applications" description="Fetching review queue and filters">
+              <SkeletonTable columns={6} rows={5} />
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                <div className="rounded-xl border border-gray-200 bg-white p-4">
+                  <SkeletonCard compact />
+                </div>
+                <div className="rounded-xl border border-gray-200 bg-white p-4">
+                  <SkeletonCard compact />
+                </div>
+              </div>
+            </PageLoader>
           ) : filteredApplications.length === 0 ? (
             <div className="p-6">
               <EmptyState
@@ -349,15 +365,23 @@ export const ApplicationManagement: React.FC = () => {
                   onClick={() => handleReject(selectedApplication.id)}
                   disabled={actionLoading}
                 >
-                  <XCircle className="mr-2 h-4 w-4" />
-                  Reject
+                  <ButtonLoader isLoading={actionLoading} loadingLabel="Rejecting...">
+                    <span className="inline-flex items-center">
+                      <XCircle className="mr-2 h-4 w-4" />
+                      Reject
+                    </span>
+                  </ButtonLoader>
                 </Button>
                 <Button
                   onClick={() => handleApprove(selectedApplication.id)}
                   disabled={actionLoading}
                 >
-                  <CheckCircle className="mr-2 h-4 w-4" />
-                  Approve
+                  <ButtonLoader isLoading={actionLoading} loadingLabel="Approving...">
+                    <span className="inline-flex items-center">
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      Approve
+                    </span>
+                  </ButtonLoader>
                 </Button>
               </>
             )}

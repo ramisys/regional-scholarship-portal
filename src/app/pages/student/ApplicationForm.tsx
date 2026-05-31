@@ -10,6 +10,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../..
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { toast } from 'sonner';
 import { Plus, Trash2, Save } from 'lucide-react';
+import { ButtonLoader, PageLoader, SkeletonForm } from '../../components/loading';
+import { ProgressIndicator } from '../../components/common/ProgressIndicator';
 
 interface ApplicationFormData {
   personalInfo: {
@@ -39,7 +41,9 @@ interface ApplicationFormData {
 
 export const ApplicationForm: React.FC = () => {
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
+  const [isLoadingDraft, setIsLoadingDraft] = useState(true);
   const [activeTab, setActiveTab] = useState('personal');
   const stepOrder = ['personal', 'contact', 'education'];
 
@@ -54,8 +58,10 @@ export const ApplicationForm: React.FC = () => {
     name: 'educationalBackground'
   });
 
+  const isBusy = isSubmitting || isSavingDraft;
+
   const onSubmit = async (data: ApplicationFormData) => {
-    setIsLoading(true);
+    setIsSubmitting(true);
     try {
       await api.post('/student/applications', data);
       // remove any local draft after successful submit
@@ -65,7 +71,7 @@ export const ApplicationForm: React.FC = () => {
     } catch (err) {
       toast.error(handleApiError(err));
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -82,10 +88,11 @@ export const ApplicationForm: React.FC = () => {
         // ignore parse errors
       }
     }
+    setIsLoadingDraft(false);
   }, [reset]);
 
   const saveDraft = () => {
-    setIsLoading(true);
+    setIsSavingDraft(true);
     try {
       const formData = getValues();
       localStorage.setItem(DRAFT_KEY, JSON.stringify(formData));
@@ -93,7 +100,7 @@ export const ApplicationForm: React.FC = () => {
     } catch (err) {
       toast.error('Failed to save draft locally');
     } finally {
-      setIsLoading(false);
+      setIsSavingDraft(false);
     }
   };
 
@@ -121,80 +128,96 @@ export const ApplicationForm: React.FC = () => {
         <p className="text-gray-500">Complete all sections to submit your application</p>
       </div>
 
+      <ProgressIndicator
+        currentStep={currentStepIndex}
+        steps={[
+          { label: 'Personal Info' },
+          { label: 'Contact Info' },
+          { label: 'Education' },
+        ]}
+      />
+
+      {isLoadingDraft ? (
+        <PageLoader title="Loading application draft" description="Restoring your saved progress">
+          <SkeletonForm fields={5} />
+        </PageLoader>
+      ) : null}
+
       <form onSubmit={handleSubmit(onSubmit)}>
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="w-full grid grid-cols-3">
-            <TabsTrigger value="personal">Personal Info</TabsTrigger>
-            <TabsTrigger value="contact">Contact Info</TabsTrigger>
-            <TabsTrigger value="education">Education</TabsTrigger>
-          </TabsList>
+        <fieldset disabled={isBusy} className="space-y-6">
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="w-full grid grid-cols-3">
+              <TabsTrigger value="personal">Personal Info</TabsTrigger>
+              <TabsTrigger value="contact">Contact Info</TabsTrigger>
+              <TabsTrigger value="education">Education</TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="personal">
-            <Card>
-              <CardHeader className="border-b">
-                <CardTitle>Personal Information</CardTitle>
-                <CardDescription>Enter your personal details</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="firstName">First Name</Label>
-                    <Input
-                      id="firstName"
-                      {...register('personalInfo.firstName', { required: 'First name is required' })}
-                      className="mt-1"
-                    />
-                    {errors.personalInfo?.firstName && (
-                      <p className="text-red-500 text-sm mt-1">{errors.personalInfo.firstName.message}</p>
-                    )}
+            <TabsContent value="personal">
+              <Card>
+                <CardHeader className="border-b">
+                  <CardTitle>Personal Information</CardTitle>
+                  <CardDescription>Enter your personal details</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="firstName">First Name</Label>
+                      <Input
+                        id="firstName"
+                        {...register('personalInfo.firstName', { required: 'First name is required' })}
+                        className="mt-1"
+                      />
+                      {errors.personalInfo?.firstName && (
+                        <p className="text-red-500 text-sm mt-1">{errors.personalInfo.firstName.message}</p>
+                      )}
+                    </div>
+                    <div>
+                      <Label htmlFor="middleName">Middle Name</Label>
+                      <Input id="middleName" {...register('personalInfo.middleName')} className="mt-1" />
+                    </div>
+                    <div>
+                      <Label htmlFor="lastName">Last Name</Label>
+                      <Input
+                        id="lastName"
+                        {...register('personalInfo.lastName', { required: 'Last name is required' })}
+                        className="mt-1"
+                      />
+                      {errors.personalInfo?.lastName && (
+                        <p className="text-red-500 text-sm mt-1">{errors.personalInfo.lastName.message}</p>
+                      )}
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor="middleName">Middle Name</Label>
-                    <Input id="middleName" {...register('personalInfo.middleName')} className="mt-1" />
-                  </div>
-                  <div>
-                    <Label htmlFor="lastName">Last Name</Label>
-                    <Input
-                      id="lastName"
-                      {...register('personalInfo.lastName', { required: 'Last name is required' })}
-                      className="mt-1"
-                    />
-                    {errors.personalInfo?.lastName && (
-                      <p className="text-red-500 text-sm mt-1">{errors.personalInfo.lastName.message}</p>
-                    )}
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="dateOfBirth">Date of Birth</Label>
-                    <Input
-                      id="dateOfBirth"
-                      type="date"
-                      {...register('personalInfo.dateOfBirth', { required: 'Date of birth is required' })}
-                      className="mt-1"
-                    />
-                    {errors.personalInfo?.dateOfBirth && (
-                      <p className="text-red-500 text-sm mt-1">{errors.personalInfo.dateOfBirth.message}</p>
-                    )}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="dateOfBirth">Date of Birth</Label>
+                      <Input
+                        id="dateOfBirth"
+                        type="date"
+                        {...register('personalInfo.dateOfBirth', { required: 'Date of birth is required' })}
+                        className="mt-1"
+                      />
+                      {errors.personalInfo?.dateOfBirth && (
+                        <p className="text-red-500 text-sm mt-1">{errors.personalInfo.dateOfBirth.message}</p>
+                      )}
+                    </div>
+                    <div>
+                      <Label htmlFor="gender">Gender</Label>
+                      <Input
+                        id="gender"
+                        {...register('personalInfo.gender', { required: 'Gender is required' })}
+                        className="mt-1"
+                      />
+                      {errors.personalInfo?.gender && (
+                        <p className="text-red-500 text-sm mt-1">{errors.personalInfo.gender.message}</p>
+                      )}
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor="gender">Gender</Label>
-                    <Input
-                      id="gender"
-                      {...register('personalInfo.gender', { required: 'Gender is required' })}
-                      className="mt-1"
-                    />
-                    {errors.personalInfo?.gender && (
-                      <p className="text-red-500 text-sm mt-1">{errors.personalInfo.gender.message}</p>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-          <TabsContent value="contact">
+            <TabsContent value="contact">
             <Card>
               <CardHeader className="border-b">
                 <CardTitle>Contact Information</CardTitle>
@@ -277,9 +300,9 @@ export const ApplicationForm: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
+            </TabsContent>
 
-          <TabsContent value="education">
+            <TabsContent value="education">
             <Card>
               <CardHeader className="border-b">
                 <CardTitle>Educational Background</CardTitle>
@@ -363,33 +386,40 @@ export const ApplicationForm: React.FC = () => {
                 </Button>
               </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
+            </TabsContent>
+          </Tabs>
 
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <Button type="button" variant="outline" onClick={saveDraft} disabled={isLoading}>
-            <Save className="mr-2 h-4 w-4" />
-            Save Draft
-          </Button>
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <Button type="button" variant="outline" onClick={saveDraft} disabled={isBusy}>
+              <ButtonLoader isLoading={isSavingDraft} loadingLabel="Saving...">
+                <span className="inline-flex items-center">
+                  <Save className="mr-2 h-4 w-4" />
+                  Save Draft
+                </span>
+              </ButtonLoader>
+            </Button>
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            {currentStepIndex > 0 && (
-              <Button type="button" variant="outline" onClick={goToPreviousStep} disabled={isLoading}>
-                Back
-              </Button>
-            )}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              {currentStepIndex > 0 && (
+                <Button type="button" variant="outline" onClick={goToPreviousStep} disabled={isBusy}>
+                  Back
+                </Button>
+              )}
 
-            {isFinalStep ? (
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? 'Submitting...' : 'Submit Application'}
-              </Button>
-            ) : (
-              <Button type="button" onClick={goToNextStep} disabled={isLoading}>
-                Next
-              </Button>
-            )}
+              {isFinalStep ? (
+                <Button type="submit" disabled={isBusy}>
+                  <ButtonLoader isLoading={isSubmitting} loadingLabel="Submitting...">
+                    Submit Application
+                  </ButtonLoader>
+                </Button>
+              ) : (
+                <Button type="button" onClick={goToNextStep} disabled={isBusy}>
+                  Next
+                </Button>
+              )}
+            </div>
           </div>
-        </div>
+        </fieldset>
       </form>
     </div>
   );
