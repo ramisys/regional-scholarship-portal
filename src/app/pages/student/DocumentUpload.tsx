@@ -1,10 +1,13 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import api, { handleApiError } from '../../utils/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Progress } from '../../components/ui/progress';
+import { Badge } from '../../components/ui/badge';
 import { toast } from 'sonner';
-import { Upload, FileText, X } from 'lucide-react';
+import { FileText, X } from 'lucide-react';
+import { FileUploader } from '../../components/common/FileUploader';
+import { EmptyState } from '../../components/ui/empty-state';
 
 interface UploadedDocument {
   id: string;
@@ -32,8 +35,6 @@ export const DocumentUpload: React.FC = () => {
   const [documents, setDocuments] = useState<UploadedDocument[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [dragActive, setDragActive] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [activeApplicationId, setActiveApplicationId] = useState<string | null>(null);
   const [applicationTitle, setApplicationTitle] = useState('');
   const [loadingApplication, setLoadingApplication] = useState(true);
@@ -69,16 +70,6 @@ export const DocumentUpload: React.FC = () => {
     };
 
     fetchApplications();
-  }, []);
-
-  const handleDrag = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') {
-      setDragActive(true);
-    } else if (e.type === 'dragleave') {
-      setDragActive(false);
-    }
   }, []);
 
   const validateFile = (file: File): string | null => {
@@ -142,31 +133,25 @@ export const DocumentUpload: React.FC = () => {
     }
   };
 
-  const handleDrop = useCallback(async (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const file = e.dataTransfer.files[0];
-      await uploadFile(file);
-    }
-  }, []);
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      await uploadFile(file);
-      e.target.value = '';
-    }
-  };
-
-  const openFilePicker = () => {
-    if (uploading || loadingApplication || !activeApplicationId) {
+  const handleFilesSelected = (files: File[]) => {
+    if (loadingApplication) {
+      toast.error('Loading your application details. Please wait.');
       return;
     }
 
-    fileInputRef.current?.click();
+    if (!activeApplicationId) {
+      toast.error('Create a scholarship application before uploading documents.');
+      return;
+    }
+
+    if (uploading) {
+      toast.error('Please wait for the current upload to finish.');
+      return;
+    }
+
+    if (files[0]) {
+      uploadFile(files[0]);
+    }
   };
 
   const handleDelete = async (documentId: string) => {
@@ -175,10 +160,10 @@ export const DocumentUpload: React.FC = () => {
   };
 
   return (
-    <div className="max-w-5xl mx-auto p-6 space-y-6">
+    <div className="max-w-5xl mx-auto space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Document Upload</h1>
-        <p className="text-gray-600 mt-1">Upload your KYC and supporting documents</p>
+        <h1 className="mb-1 text-gray-900 text-2xl font-semibold">Document Upload</h1>
+        <p className="text-gray-500">Upload your KYC and supporting documents</p>
         {!loadingApplication && activeApplicationId && (
           <p className="text-sm text-gray-500 mt-2">
             Documents will be attached to {applicationTitle || 'your latest application'}.
@@ -192,38 +177,19 @@ export const DocumentUpload: React.FC = () => {
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="border-b">
           <CardTitle>Upload Documents</CardTitle>
           <CardDescription>
             Accepted formats: PDF, JPEG, PNG (Max size: 5MB)
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div
-            className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-              dragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
-            }`}
-            onDragEnter={handleDrag}
-            onDragLeave={handleDrag}
-            onDragOver={handleDrag}
-            onDrop={handleDrop}
-          >
-            <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <p className="text-lg mb-2">Drag and drop your files here</p>
-            <p className="text-sm text-gray-500 mb-4">or</p>
-            <Button type="button" variant="outline" disabled={uploading || loadingApplication || !activeApplicationId} onClick={openFilePicker}>
-              Browse Files
-            </Button>
-            <input
-              ref={fileInputRef}
-              id="file-upload"
-              type="file"
-              className="hidden"
-              onChange={handleFileChange}
-              accept=".pdf,.jpg,.jpeg,.png"
-              disabled={uploading || loadingApplication || !activeApplicationId}
-            />
-          </div>
+          <FileUploader
+            onFileSelect={handleFilesSelected}
+            accept=".pdf,.jpg,.jpeg,.png"
+            maxSize={MAX_FILE_SIZE}
+            multiple={false}
+          />
 
           {uploading && (
             <div className="mt-4">
@@ -238,22 +204,23 @@ export const DocumentUpload: React.FC = () => {
       </Card>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="border-b">
           <CardTitle>Uploaded Documents</CardTitle>
           <CardDescription>Manage your uploaded documents</CardDescription>
         </CardHeader>
         <CardContent>
           {documents.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <FileText className="mx-auto h-12 w-12 mb-2 opacity-50" />
-              <p>No documents uploaded yet</p>
-            </div>
+            <EmptyState
+              icon={<FileText className="h-12 w-12" />}
+              title="No documents uploaded yet"
+              description="Upload your first document to get started"
+            />
           ) : (
             <div className="space-y-3">
               {documents.map((doc) => (
                 <div
                   key={doc.id}
-                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
+                  className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-gray-50 hover:bg-gray-100"
                 >
                   <div className="flex items-center space-x-4 flex-1">
                     <FileText className="h-8 w-8 text-blue-500" />
@@ -265,17 +232,17 @@ export const DocumentUpload: React.FC = () => {
                     </div>
                   </div>
                   <div className="flex items-center space-x-3">
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-medium ${
+                    <Badge
+                      className={
                         doc.status === 'approved'
                           ? 'bg-green-100 text-green-700'
                           : doc.status === 'rejected'
                           ? 'bg-red-100 text-red-700'
                           : 'bg-yellow-100 text-yellow-700'
-                      }`}
+                      }
                     >
                       {doc.status}
-                    </span>
+                    </Badge>
                     <Button
                       variant="ghost"
                       size="sm"

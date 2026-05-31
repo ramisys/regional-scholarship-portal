@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 import { GraduationCap, Home, FileText, Upload, CheckCircle, LogOut, User, Menu } from 'lucide-react';
+import { DashboardLayout } from './layout/DashboardLayout';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -41,10 +42,16 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navItems = user?.role === 'coordinator' ? coordinatorNavItems : studentNavItems;
 
   const isActive = (path: string) => location.pathname === path;
+  const isDashboardRoute =
+    location.pathname.startsWith('/student') || location.pathname.startsWith('/coordinator');
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
+    <div className={`${isDashboardRoute ? 'h-dvh overflow-hidden' : 'min-h-screen'} bg-gray-50`}>
+      <nav
+        className={`bg-white border-b border-gray-200 sticky top-0 z-50 ${
+          isDashboardRoute ? 'md:hidden' : ''
+        }`}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
@@ -138,15 +145,23 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         </div>
       </nav>
 
-      <main>{children}</main>
-
-      <footer className="bg-white border-t border-gray-200 mt-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <p className="text-center text-sm text-gray-500">
-            © 2026 Regional Scholarship Portal. All rights reserved.
-          </p>
+      {isDashboardRoute ? (
+        <div className="h-[calc(100dvh-4rem)] min-h-0 md:h-dvh">
+          <DashboardLayout>{children}</DashboardLayout>
         </div>
-      </footer>
+      ) : (
+        <main>{children}</main>
+      )}
+
+      {!isDashboardRoute && (
+        <footer className="bg-white border-t border-gray-200 mt-12">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <p className="text-center text-sm text-gray-500">
+              © 2026 Regional Scholarship Portal. All rights reserved.
+            </p>
+          </div>
+        </footer>
+      )}
     </div>
   );
 };

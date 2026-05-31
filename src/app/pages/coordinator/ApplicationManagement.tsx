@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import api, { handleApiError } from '../../utils/api';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
@@ -22,7 +22,8 @@ import {
 } from '../../components/ui/dialog';
 import { Badge } from '../../components/ui/badge';
 import { toast } from 'sonner';
-import { Search, Eye, CheckCircle, XCircle, FileText } from 'lucide-react';
+import { Filter, Search, Eye, CheckCircle, XCircle, FileText } from 'lucide-react';
+import { EmptyState } from '../../components/ui/empty-state';
 
 interface Application {
   id: string;
@@ -159,22 +160,11 @@ export const ApplicationManagement: React.FC = () => {
 
   const uniqueRegions = Array.from(new Set(applications.map((app) => app.region)));
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent"></div>
-          <p className="mt-4">Loading applications...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
+    <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Application Management</h1>
-        <p className="text-gray-600 mt-1">Review and manage scholarship applications</p>
+        <h1 className="mb-1 text-gray-900 text-2xl font-semibold">Application Management</h1>
+        <p className="text-gray-500">Review and manage scholarship applications</p>
       </div>
 
       {error && (
@@ -184,70 +174,77 @@ export const ApplicationManagement: React.FC = () => {
       )}
 
       <Card>
-        <CardHeader>
-          <CardTitle>Filter Applications</CardTitle>
+        <CardHeader className="border-b">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <CardTitle>Applications</CardTitle>
+              <CardDescription>Search and filter scholarship applications</CardDescription>
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Search by name or email..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Select value={regionFilter} onValueChange={setRegionFilter}>
+                <SelectTrigger className="sm:w-48">
+                  <SelectValue placeholder="Filter by region" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Regions</SelectItem>
+                  {uniqueRegions.map((region) => (
+                    <SelectItem key={region} value={region}>
+                      {region}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="sm:w-48">
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="approved">Approved</SelectItem>
+                  <SelectItem value="rejected">Rejected</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Search by name or email..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+        <CardContent className="p-0">
+          {isLoading ? (
+            <div className="text-center py-8">
+              <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent"></div>
+              <p className="mt-4 text-sm text-gray-500">Loading applications...</p>
+            </div>
+          ) : filteredApplications.length === 0 ? (
+            <div className="p-6">
+              <EmptyState
+                icon={<Filter className="h-12 w-12" />}
+                title="No applications found"
+                description="Try adjusting your search or filter criteria"
               />
             </div>
-            <Select value={regionFilter} onValueChange={setRegionFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Filter by region" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Regions</SelectItem>
-                {uniqueRegions.map((region) => (
-                  <SelectItem key={region} value={region}>
-                    {region}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="approved">Approved</SelectItem>
-                <SelectItem value="rejected">Rejected</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Applicant Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Region</TableHead>
-                <TableHead>Submitted Date</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredApplications.length === 0 ? (
+          ) : (
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-gray-500">
-                    No applications found
-                  </TableCell>
+                  <TableHead>Applicant Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Region</TableHead>
+                  <TableHead>Submitted Date</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ) : (
-                filteredApplications.map((application) => (
+              </TableHeader>
+              <TableBody>
+                {filteredApplications.map((application) => (
                   <TableRow key={application.id}>
                     <TableCell className="font-medium">{application.applicantName}</TableCell>
                     <TableCell>{application.email}</TableCell>
@@ -267,10 +264,10 @@ export const ApplicationManagement: React.FC = () => {
                       </Button>
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
 
@@ -313,13 +310,17 @@ export const ApplicationManagement: React.FC = () => {
               <div>
                 <h4 className="font-medium mb-3">Uploaded Documents</h4>
                 {(selectedApplication.documents ?? []).length === 0 ? (
-                  <p className="text-gray-500 text-sm">No documents uploaded</p>
+                  <EmptyState
+                    icon={<FileText className="h-10 w-10" />}
+                    title="No documents uploaded"
+                    description="This application has no files attached"
+                  />
                 ) : (
                   <div className="space-y-2">
                     {(selectedApplication.documents ?? []).map((doc) => (
                       <div
                         key={doc.id}
-                        className="flex items-center justify-between p-3 border rounded"
+                        className="flex items-center justify-between p-3 border border-gray-200 rounded-lg bg-gray-50"
                       >
                         <div className="flex items-center gap-3">
                           <FileText className="h-5 w-5 text-blue-500" />
