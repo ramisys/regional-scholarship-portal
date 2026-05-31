@@ -4,7 +4,7 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import api, { handleApiError } from '../../utils/api';
-import { GraduationCap } from 'lucide-react';
+import { CheckCircle2, GraduationCap } from 'lucide-react';
 
 export const ForgotPassword: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -29,19 +29,35 @@ export const ForgotPassword: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="max-w-md w-full space-y-8">
-        <div className="text-center">
-          <div className="flex justify-center mb-4">
-            <div className="bg-blue-600 text-white p-3 rounded-full">
-              <GraduationCap size={32} />
-            </div>
+    <div className="min-h-screen flex items-center justify-center p-8 bg-gray-50">
+      <div className="w-full max-w-md bg-white p-8 rounded-xl shadow-sm border border-gray-200">
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-6">
+            <GraduationCap className="h-10 w-10 text-blue-600" />
+            <h1 className="font-semibold text-gray-900">Scholarship Portal</h1>
           </div>
-          <h2 className="text-3xl font-bold">Reset Password</h2>
-          <p className="mt-2 text-gray-600">Enter your email to receive reset instructions</p>
+
+          {success ? (
+            <div className="text-center">
+              <div className="mb-4 inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100">
+                <CheckCircle2 className="h-8 w-8 text-green-600" />
+              </div>
+              <h2 className="mb-2 text-gray-900 text-xl font-semibold">Check your email</h2>
+              <p className="text-gray-500">
+                Password reset instructions have been sent to your email address.
+              </p>
+            </div>
+          ) : (
+            <>
+              <h2 className="mb-2 text-gray-900 text-xl font-semibold">Reset your password</h2>
+              <p className="text-gray-500">
+                Enter your email address and we'll send you instructions to reset your password.
+              </p>
+            </>
+          )}
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-8 space-y-6 bg-white p-8 rounded-lg shadow">
+        <form onSubmit={handleSubmit} className="space-y-6">
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
               {error}
@@ -73,7 +89,7 @@ export const ForgotPassword: React.FC = () => {
 
           <p className="text-center text-sm text-gray-600">
             Remember your password?{' '}
-            <Link to="/login" className="text-blue-600 hover:text-blue-500 font-medium">
+            <Link to="/login" className="text-blue-600 hover:underline font-medium">
               Sign in
             </Link>
           </p>
