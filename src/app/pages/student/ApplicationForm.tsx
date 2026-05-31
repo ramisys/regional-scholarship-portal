@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { useForm, useFieldArray } from 'react-hook-form';
 import api, { handleApiError } from '../../utils/api';
@@ -41,8 +41,9 @@ export const ApplicationForm: React.FC = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('personal');
+  const stepOrder = ['personal', 'contact', 'education'];
 
-  const { register, control, handleSubmit, formState: { errors } } = useForm<ApplicationFormData>({
+  const { register, control, handleSubmit, getValues, reset, formState: { errors } } = useForm<ApplicationFormData>({
     defaultValues: {
       educationalBackground: [{ schoolName: '', degree: '', fieldOfStudy: '', startDate: '', endDate: '', gpa: '' }]
     }
@@ -57,6 +58,8 @@ export const ApplicationForm: React.FC = () => {
     setIsLoading(true);
     try {
       await api.post('/student/applications', data);
+      // remove any local draft after successful submit
+      try { localStorage.removeItem('application_draft'); } catch (e) {}
       toast.success('Application submitted successfully!');
       navigate('/student/applications');
     } catch (err) {
@@ -66,16 +69,48 @@ export const ApplicationForm: React.FC = () => {
     }
   };
 
-  const saveDraft = async () => {
+  const DRAFT_KEY = 'application_draft';
+
+  useEffect(() => {
+    const draft = localStorage.getItem(DRAFT_KEY);
+    if (draft) {
+      try {
+        const parsed = JSON.parse(draft);
+        reset(parsed);
+        toast('Loaded saved draft from this device');
+      } catch (e) {
+        // ignore parse errors
+      }
+    }
+  }, [reset]);
+
+  const saveDraft = () => {
     setIsLoading(true);
     try {
-      const formData = control._formValues;
-      await api.post('/student/applications/draft', formData);
-      toast.success('Draft saved successfully!');
+      const formData = getValues();
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(formData));
+      toast.success('Draft saved to this device');
     } catch (err) {
-      toast.error(handleApiError(err));
+      toast.error('Failed to save draft locally');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const currentStepIndex = stepOrder.indexOf(activeTab);
+  const isFinalStep = activeTab === 'education';
+
+  const goToNextStep = () => {
+    const nextStep = stepOrder[currentStepIndex + 1];
+    if (nextStep) {
+      setActiveTab(nextStep);
+    }
+  };
+
+  const goToPreviousStep = () => {
+    const previousStep = stepOrder[currentStepIndex - 1];
+    if (previousStep) {
+      setActiveTab(previousStep);
     }
   };
 
@@ -331,14 +366,29 @@ export const ApplicationForm: React.FC = () => {
           </TabsContent>
         </Tabs>
 
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-between">
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Button type="button" variant="outline" onClick={saveDraft} disabled={isLoading}>
             <Save className="mr-2 h-4 w-4" />
             Save Draft
           </Button>
-          <Button type="submit" disabled={isLoading}>
-            {isLoading ? 'Submitting...' : 'Submit Application'}
-          </Button>
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            {currentStepIndex > 0 && (
+              <Button type="button" variant="outline" onClick={goToPreviousStep} disabled={isLoading}>
+                Back
+              </Button>
+            )}
+
+            {isFinalStep ? (
+              <Button type="submit" disabled={isLoading}>
+                {isLoading ? 'Submitting...' : 'Submit Application'}
+              </Button>
+            ) : (
+              <Button type="button" onClick={goToNextStep} disabled={isLoading}>
+                Next
+              </Button>
+            )}
+          </div>
         </div>
       </form>
     </div>
