@@ -25,6 +25,9 @@ const DocumentUpload = lazy(() =>
 const ApplicationTracking = lazy(() =>
   import('./pages/student/ApplicationTracking').then((module) => ({ default: module.ApplicationTracking }))
 );
+const ApplicationDetail = lazy(() =>
+  import('./pages/student/ApplicationDetail').then((module) => ({ default: module.ApplicationDetail }))
+);
 
 const CoordinatorDashboard = lazy(() =>
   import('./pages/coordinator/Dashboard').then((module) => ({ default: module.CoordinatorDashboard }))
@@ -101,6 +104,17 @@ export default function App() {
                 <ProtectedRoute allowedRoles={['student']}>
                   <Layout>
                     <ApplicationTracking />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/student/applications/:applicationId"
+              element={
+                <ProtectedRoute allowedRoles={['student']}>
+                  <Layout>
+                    <ApplicationDetail />
                   </Layout>
                 </ProtectedRoute>
               }
