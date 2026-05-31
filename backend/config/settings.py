@@ -3,8 +3,10 @@ from datetime import timedelta
 from pathlib import Path
 
 from dotenv import load_dotenv
-
 load_dotenv()
+
+# Support Render's managed Postgres via DATABASE_URL
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -40,6 +42,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'core.middleware.SecurityHeadersMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -83,6 +86,10 @@ DATABASES = {
         'PORT': os.getenv('POSTGRES_PORT', '5432'),
     }
 }
+
+# If a single DATABASE_URL is provided (Render), prefer it
+if os.getenv('DATABASE_URL'):
+    DATABASES['default'] = dj_database_url.parse(os.getenv('DATABASE_URL'), conn_max_age=600)
 
 
 # Password validation
@@ -211,3 +218,6 @@ if not DEBUG:
 
     if not CLOUDINARY_STORAGE.get('CLOUD_NAME') or not CLOUDINARY_STORAGE.get('API_KEY') or not CLOUDINARY_STORAGE.get('API_SECRET'):
         raise ImproperlyConfigured('Cloudinary storage is enabled but CLOUDINARY_* environment variables are not set')
+
+    # Serve static files with WhiteNoise in production
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
