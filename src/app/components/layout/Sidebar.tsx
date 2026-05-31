@@ -19,7 +19,6 @@ export const Sidebar = () => {
   const studentLinks = [
     { to: "/student/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { to: "/student/apply", label: "Apply", icon: FileText },
-    { to: "/student/documents", label: "Documents", icon: Upload },
     { to: "/student/applications", label: "My Applications", icon: CheckCircle },
   ];
 

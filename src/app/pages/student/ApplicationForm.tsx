@@ -78,27 +78,92 @@ export const ApplicationForm: React.FC = () => {
   const DRAFT_KEY = 'application_draft';
 
   useEffect(() => {
-    const draft = localStorage.getItem(DRAFT_KEY);
-    if (draft) {
+    const loadDraft = async () => {
+      // Prefer server-saved draft, fall back to localStorage
       try {
-        const parsed = JSON.parse(draft);
-        reset(parsed);
-        toast('Loaded saved draft from this device');
-      } catch (e) {
-        // ignore parse errors
+        const response = await api.get('/student/applications');
+        const apps = response.data?.data ?? [];
+        // find latest draft for this user
+        const draftApp = Array.isArray(apps) ? apps.find((a: any) => a.is_draft) : null;
+        if (draftApp) {
+          // try to map server shape to form shape
+          const mapped: any = {
+            personalInfo: {},
+            contactInfo: {},
+            educationalBackground: [],
+          };
+
+          if (draftApp.personal_statement) {
+            try {
+              const parsed = JSON.parse(draftApp.personal_statement);
+              if (parsed.personalInfo && typeof parsed.personalInfo === 'object') {
+                mapped.personalInfo = parsed.personalInfo;
+              }
+              if (parsed.contactInfo && typeof parsed.contactInfo === 'object') {
+                mapped.contactInfo = parsed.contactInfo;
+              }
+            } catch (e) {
+              // ignore parse errors
+            }
+          }
+
+          if (Array.isArray(draftApp.educational_backgrounds)) {
+            mapped.educationalBackground = draftApp.educational_backgrounds.map((eb: any) => ({
+              schoolName: eb.school_name || '',
+              degree: eb.level || '',
+              fieldOfStudy: '',
+              startDate: eb.year_started ? `${String(eb.year_started)}-01-01` : '',
+              endDate: eb.year_ended ? `${String(eb.year_ended)}-01-01` : '',
+              gpa: '',
+            }));
+          }
+
+          reset(mapped);
+          toast('Loaded saved draft from server');
+          setIsLoadingDraft(false);
+          return;
+        }
+      } catch (err) {
+        // ignore and fallback to local
       }
-    }
-    setIsLoadingDraft(false);
+
+      const draft = localStorage.getItem(DRAFT_KEY);
+      if (draft) {
+        try {
+          const parsed = JSON.parse(draft);
+          reset(parsed);
+          toast('Loaded saved draft from this device');
+        } catch (e) {
+          // ignore parse errors
+        }
+      }
+
+      setIsLoadingDraft(false);
+    };
+
+    void loadDraft();
   }, [reset]);
 
-  const saveDraft = () => {
+  const saveDraft = async () => {
     setIsSavingDraft(true);
     try {
       const formData = getValues();
-      localStorage.setItem(DRAFT_KEY, JSON.stringify(formData));
-      toast.success('Draft saved to this device');
+
+      // Attempt to persist draft to server
+      try {
+        await api.post('/student/applications/draft', formData);
+        toast.success('Draft saved to server');
+      } catch (err) {
+        // fallback to localStorage if server save fails
+        try {
+          localStorage.setItem(DRAFT_KEY, JSON.stringify(formData));
+          toast.success('Draft saved to this device (offline)');
+        } catch (e) {
+          toast.error('Failed to save draft');
+        }
+      }
     } catch (err) {
-      toast.error('Failed to save draft locally');
+      toast.error('Failed to save draft');
     } finally {
       setIsSavingDraft(false);
     }

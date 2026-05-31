@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import api from '../utils/api';
+import { setAccessToken, clearAccessToken } from '../utils/authStore';
 
 interface User {
   id: string;
@@ -21,10 +22,9 @@ interface AuthContextType {
 interface RegisterData {
   email: string;
   password: string;
-  firstName: string;
-  lastName: string;
   role: 'student' | 'coordinator';
   honeypot?: string;
+  profile?: { full_name?: string };
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -42,33 +42,55 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const normalizeUser = (u: any) => {
+    if (!u) return null;
+    const p = u.profile || {};
+    const full = p.full_name || '';
+    const parts = full.split(' ').filter(Boolean);
+    const firstName = parts.length ? parts[0] : '';
+    const lastName = parts.length > 1 ? parts.slice(1).join(' ') : '';
+    return {
+      id: u.id,
+      email: u.email,
+      role: u.role,
+      firstName,
+      lastName,
+      profile: p,
+    };
+  };
+
   useEffect(() => {
     let isMounted = true;
 
     const bootstrapAuth = async () => {
-      const storedToken = localStorage.getItem('token');
-
-      if (!storedToken) {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-        return;
-      }
-
-      setToken(storedToken);
-
       try {
+        // Try to obtain access token via httpOnly refresh cookie
+        const refreshResp = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/auth/refresh`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+        });
+
+        if (refreshResp.ok) {
+          const json = await refreshResp.json();
+          const access = json?.data?.access ?? json?.access;
+          if (access) {
+            setAccessToken(access);
+          }
+        }
+
         const response = await api.get('/auth/profile');
-        const profile = response.data?.data ?? response.data;
+        const raw = response.data?.data ?? response.data;
 
         if (isMounted) {
-          setUser(profile);
-          localStorage.setItem('user', JSON.stringify(profile));
+          const n = normalizeUser(raw);
+          setUser(n);
+          localStorage.setItem('user', JSON.stringify(n));
         }
       } catch (error) {
         if (isMounted) {
           setUser(null);
-          setToken(null);
+          clearAccessToken();
         }
       } finally {
         if (isMounted) {
@@ -86,16 +108,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await api.post('/auth/login', { email, password });
-      const { access: newToken, refresh: newRefreshToken, user: newUser } = response.data.data;
+      const resp = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/auth/login`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const json = await resp.json();
+      const payload = json?.data ?? json;
+      const newToken = payload?.access;
+      const newUser = payload?.user;
 
-      localStorage.setItem('token', newToken);
-      localStorage.setItem('user', JSON.stringify(newUser));
-      localStorage.setItem('accessToken', newToken);
-      localStorage.setItem('refreshToken', newRefreshToken);
+      if (newToken) {
+        setAccessToken(newToken);
+        setToken(newToken);
+      }
 
-      setToken(newToken);
-      setUser(newUser);
+      if (newUser) {
+        const n = normalizeUser(newUser);
+        setUser(n);
+        localStorage.setItem('user', JSON.stringify(n));
+      }
     } catch (error) {
       throw error;
     }
@@ -107,26 +140,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
-      const response = await api.post('/auth/register', data);
-      const { access: newToken, refresh: newRefreshToken, user: newUser } = response.data.data;
+      await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
 
-      localStorage.setItem('token', newToken);
-      localStorage.setItem('user', JSON.stringify(newUser));
-      localStorage.setItem('accessToken', newToken);
-      localStorage.setItem('refreshToken', newRefreshToken);
-
-      setToken(newToken);
-      setUser(newUser);
+      // Auto-login after registration
+      await login(data.email, data.password);
     } catch (error) {
       throw error;
     }
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
+    try {
+      void fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/auth/logout`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+      });
+    } catch (e) {
+      // ignore
+    }
     localStorage.removeItem('user');
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
+    clearAccessToken();
     setToken(null);
     setUser(null);
   };

@@ -1,5 +1,6 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { startGlobalLoading, stopGlobalLoading } from '../components/loading';
+import { getAccessToken, setAccessToken, clearAccessToken } from './authStore';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
@@ -21,13 +22,12 @@ const authClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true,
 });
 
 const clearAuthStorage = () => {
-  localStorage.removeItem('token');
+  clearAccessToken();
   localStorage.removeItem('user');
-  localStorage.removeItem('accessToken');
-  localStorage.removeItem('refreshToken');
 };
 
 const redirectToLogin = () => {
@@ -42,7 +42,7 @@ api.interceptors.request.use(
       startGlobalLoading();
     }
 
-    const token = localStorage.getItem('token');
+    const token = getAccessToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -68,54 +68,78 @@ api.interceptors.response.use(
     if (status === 401 && !loadingConfig._retry) {
       loadingConfig._retry = true;
 
-      const refreshToken = localStorage.getItem('refreshToken');
-      if (!refreshToken) {
-        if (!loadingConfig._skipGlobalLoading && !loadingConfig._deferGlobalLoadingStop) {
-          stopGlobalLoading();
-        }
-        clearAuthStorage();
-        redirectToLogin();
-        return Promise.reject(error);
-      }
-
+      // Attempt refresh via httpOnly cookie first
       loadingConfig._deferGlobalLoadingStop = true;
 
       try {
         startGlobalLoading();
-        const refreshResponse = await authClient.post('/auth/refresh', { refresh: refreshToken });
+        const refreshResponse = await authClient.post('/auth/refresh');
         const refreshData = refreshResponse.data?.data ?? refreshResponse.data;
         const newAccessToken = refreshData?.access;
-        const newRefreshToken = refreshData?.refresh ?? refreshToken;
 
         if (newAccessToken) {
-          localStorage.setItem('token', newAccessToken);
-          localStorage.setItem('accessToken', newAccessToken);
-        }
-
-        if (newRefreshToken) {
-          localStorage.setItem('refreshToken', newRefreshToken);
+          setAccessToken(newAccessToken);
         }
 
         const retryResponse = await api.request({
           ...loadingConfig,
           headers: {
             ...loadingConfig.headers,
-            Authorization: `Bearer ${newAccessToken || localStorage.getItem('token') || ''}`,
+            Authorization: `Bearer ${newAccessToken || getAccessToken() || ''}`,
           },
           _skipGlobalLoading: true,
           _deferGlobalLoadingStop: true,
         });
 
         return retryResponse;
-      } catch (refreshError) {
-        clearAuthStorage();
-        redirectToLogin();
-        return Promise.reject(refreshError);
+      } catch (err) {
+        // fallback to legacy refreshToken in storage
+        try {
+          startGlobalLoading();
+          const refreshToken = localStorage.getItem('refreshToken');
+          if (!refreshToken) {
+            clearAuthStorage();
+            redirectToLogin();
+            return Promise.reject(error);
+          }
+
+          const refreshResponse = await authClient.post('/auth/refresh', { refresh: refreshToken });
+          const refreshData = refreshResponse.data?.data ?? refreshResponse.data;
+          const newAccessToken = refreshData?.access;
+          const newRefreshToken = refreshData?.refresh ?? refreshToken;
+
+          if (newAccessToken) {
+            setAccessToken(newAccessToken);
+            localStorage.setItem('accessToken', newAccessToken);
+          }
+
+          if (newRefreshToken) {
+            localStorage.setItem('refreshToken', newRefreshToken);
+          }
+
+          const retryResponse = await api.request({
+            ...loadingConfig,
+            headers: {
+              ...loadingConfig.headers,
+              Authorization: `Bearer ${newAccessToken || localStorage.getItem('token') || ''}`,
+            },
+            _skipGlobalLoading: true,
+            _deferGlobalLoadingStop: true,
+          });
+
+          return retryResponse;
+        } catch (refreshError) {
+          clearAuthStorage();
+          redirectToLogin();
+          return Promise.reject(refreshError);
+        } finally {
+          stopGlobalLoading();
+          if (!loadingConfig._skipGlobalLoading) {
+            stopGlobalLoading();
+          }
+        }
       } finally {
         stopGlobalLoading();
-        if (!loadingConfig._skipGlobalLoading) {
-          stopGlobalLoading();
-        }
       }
     }
 

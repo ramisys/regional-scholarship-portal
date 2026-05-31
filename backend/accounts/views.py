@@ -54,19 +54,27 @@ class LoginAPIView(APIView):
 			return error_response("Invalid credentials", {"detail": "Email or password is incorrect"}, status.HTTP_401_UNAUTHORIZED)
 
 		refresh = RefreshToken.for_user(user)
-		data = {
-			"access": str(refresh.access_token),
-			"refresh": str(refresh),
-			"user": UserSerializer(user).data,
-		}
-		return success_response("Login successful", data)
+		access_token = str(refresh.access_token)
+
+		# Set refresh token as httpOnly cookie
+		response = success_response("Login successful", {"access": access_token, "user": UserSerializer(user).data})
+		cookie_secure = not settings.DEBUG
+		response.set_cookie(
+			"refresh",
+			str(refresh),
+			httponly=True,
+			secure=cookie_secure,
+			samesite="Lax",
+		)
+		return response
 
 
 class LogoutAPIView(APIView):
 	permission_classes = [IsAuthenticated]
 
 	def post(self, request):
-		refresh_token = request.data.get("refresh")
+		# Read refresh token from cookie if available
+		refresh_token = request.COOKIES.get("refresh")
 		if not refresh_token:
 			return error_response("Validation failed", {"refresh": ["Refresh token is required"]})
 
@@ -76,17 +84,50 @@ class LogoutAPIView(APIView):
 		except Exception:
 			return error_response("Validation failed", {"refresh": ["Invalid refresh token"]})
 
-		return success_response("Logout successful")
+		response = success_response("Logout successful")
+		response.delete_cookie("refresh")
+		return response
 
 
 class JWTRefreshAPIView(TokenRefreshView):
 	permission_classes = [AllowAny]
 
 	def post(self, request, *args, **kwargs):
+		# Prefer refresh token from cookie; otherwise fallback to body
+		refresh_token = request.COOKIES.get("refresh")
+		if refresh_token and not request.data.get("refresh"):
+			try:
+				token = RefreshToken(refresh_token)
+				new_access = str(token.access_token)
+				# Handle rotation if enabled
+				new_refresh = None
+				if settings.SIMPLE_JWT.get("ROTATE_REFRESH_TOKENS", False):
+					try:
+						new_refresh = str(token.rotate())
+					except Exception:
+						new_refresh = None
+				data = {"access": new_access}
+				resp = success_response("Token refreshed", data)
+				if new_refresh:
+					cookie_secure = not settings.DEBUG
+					resp.set_cookie("refresh", new_refresh, httponly=True, secure=cookie_secure, samesite="Lax")
+				return resp
+			except Exception:
+				return error_response("Token refresh failed", {"refresh": ["Invalid refresh token"]}, status.HTTP_400_BAD_REQUEST)
+
+		# Fallback to default behavior (refresh in body)
 		response = super().post(request, *args, **kwargs)
 		if response.status_code >= 400:
 			return error_response("Token refresh failed", response.data, response.status_code)
-		return success_response("Token refreshed", response.data)
+		# If token rotation returned a new refresh, set cookie and return only access
+		refresh_value = response.data.get("refresh") if isinstance(response.data, dict) else None
+		access_value = response.data.get("access") if isinstance(response.data, dict) else None
+		out = {"access": access_value}
+		resp = success_response("Token refreshed", out)
+		if refresh_value:
+			cookie_secure = not settings.DEBUG
+			resp.set_cookie("refresh", refresh_value, httponly=True, secure=cookie_secure, samesite="Lax")
+		return resp
 
 
 class ProfileAPIView(APIView):

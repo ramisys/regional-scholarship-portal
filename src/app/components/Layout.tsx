@@ -30,7 +30,6 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const studentNavItems = [
     { path: '/student/dashboard', label: 'Dashboard', icon: Home },
     { path: '/student/apply', label: 'Apply', icon: FileText },
-    { path: '/student/documents', label: 'Documents', icon: Upload },
     { path: '/student/applications', label: 'My Applications', icon: CheckCircle },
   ];
 

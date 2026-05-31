@@ -23,6 +23,7 @@ interface StudentApplication {
   id: string;
   title: string;
   status: string;
+  is_draft?: boolean;
 }
 
 type ApiEnvelope<T> = {
@@ -38,6 +39,7 @@ export const DocumentUpload: React.FC = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [activeApplicationId, setActiveApplicationId] = useState<string | null>(null);
   const [applicationTitle, setApplicationTitle] = useState('');
+  const [hasSubmittedApplication, setHasSubmittedApplication] = useState(false);
   const [loadingApplication, setLoadingApplication] = useState(true);
   const [applicationError, setApplicationError] = useState('');
 
@@ -61,14 +63,17 @@ export const DocumentUpload: React.FC = () => {
       const response = await api.get('/student/applications');
       const applicationsData = unwrapData<StudentApplication[] | unknown>(response.data);
       const list = Array.isArray(applicationsData) ? applicationsData : [];
-      const latestApplication = list[list.length - 1];
+      const submittedApplications = list.filter((application) => application?.is_draft === false && application?.status !== 'draft');
+      const latestApplication = submittedApplications[submittedApplications.length - 1];
 
       if (latestApplication?.id) {
         setActiveApplicationId(String(latestApplication.id));
         setApplicationTitle(latestApplication.title || 'your latest application');
+        setHasSubmittedApplication(true);
       } else {
         setActiveApplicationId(null);
         setApplicationTitle('');
+        setHasSubmittedApplication(false);
       }
     } catch (err) {
       const message = handleApiError(err);
@@ -96,8 +101,8 @@ export const DocumentUpload: React.FC = () => {
       return;
     }
 
-    if (!activeApplicationId) {
-      toast.error('Create a scholarship application before uploading documents.');
+    if (!activeApplicationId || !hasSubmittedApplication) {
+      toast.error('Submit your application before uploading documents.');
       return;
     }
 
@@ -147,7 +152,7 @@ export const DocumentUpload: React.FC = () => {
     }
 
     if (!activeApplicationId) {
-      toast.error('Create a scholarship application before uploading documents.');
+      toast.error('Submit your application before uploading documents.');
       return;
     }
 
@@ -173,12 +178,12 @@ export const DocumentUpload: React.FC = () => {
         <p className="text-gray-500">Upload your KYC and supporting documents</p>
         {!loadingApplication && activeApplicationId && (
           <p className="text-sm text-gray-500 mt-2">
-            Documents will be attached to {applicationTitle || 'your latest application'}.
+            Documents can now be attached to {applicationTitle || 'your submitted application'}.
           </p>
         )}
         {!loadingApplication && !activeApplicationId && (
           <p className="text-sm text-amber-600 mt-2">
-            Create a scholarship application before uploading documents.
+            Submit a scholarship application before uploading documents.
           </p>
         )}
       </div>
@@ -211,8 +216,14 @@ export const DocumentUpload: React.FC = () => {
             accept=".pdf,.jpg,.jpeg,.png"
             maxSize={MAX_FILE_SIZE}
             multiple={false}
-            disabled={uploading || loadingApplication}
+            disabled={uploading || loadingApplication || !hasSubmittedApplication}
           />
+
+          {!loadingApplication && !hasSubmittedApplication && (
+            <p className="mt-3 text-sm text-amber-600">
+              Uploading documents is available only after you submit an application.
+            </p>
+          )}
 
           {uploading && (
             <div className="mt-4">

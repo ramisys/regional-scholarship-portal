@@ -5,7 +5,7 @@ import api, { handleApiError } from '../../utils/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
-import { FileText, Upload, CheckCircle, Clock, XCircle, Plus } from 'lucide-react';
+import { FileText, CheckCircle, Clock, XCircle, Plus } from 'lucide-react';
 import { EmptyState } from '../../components/ui/empty-state';
 import { LoadingErrorState, PageLoader, SkeletonCard } from '../../components/loading';
 
@@ -189,19 +189,12 @@ export const StudentDashboard: React.FC = () => {
             <CardDescription>Manage your scholarship applications</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Link to="/student/apply">
                 <div className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-600 hover:bg-blue-50 transition-colors cursor-pointer">
                   <FileText className="h-8 w-8 text-gray-400 mb-2" />
                   <h4 className="font-medium text-gray-900 mb-1">Start New Application</h4>
                   <p className="text-sm text-gray-500">Begin a new scholarship application</p>
-                </div>
-              </Link>
-              <Link to="/student/documents">
-                <div className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-600 hover:bg-blue-50 transition-colors cursor-pointer">
-                  <Upload className="h-8 w-8 text-gray-400 mb-2" />
-                  <h4 className="font-medium text-gray-900 mb-1">Upload Documents</h4>
-                  <p className="text-sm text-gray-500">Add required supporting files</p>
                 </div>
               </Link>
               <Link to="/student/applications">

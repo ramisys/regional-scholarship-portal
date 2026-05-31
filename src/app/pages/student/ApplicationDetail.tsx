@@ -243,12 +243,14 @@ export const ApplicationDetail: React.FC = () => {
           </div>
         </div>
         <div className="flex flex-wrap gap-3">
-          <Link to="/student/documents">
-            <Button variant="outline">
-              <Paperclip className="mr-2 h-4 w-4" />
-              Manage Documents
-            </Button>
-          </Link>
+          {!application.is_draft && application.status !== 'draft' && (
+            <Link to="/student/documents">
+              <Button variant="outline">
+                <Paperclip className="mr-2 h-4 w-4" />
+                Manage Documents
+              </Button>
+            </Link>
+          )}
           <Link to="/student/apply">
             <Button>Start New Application</Button>
           </Link>
@@ -452,11 +454,13 @@ export const ApplicationDetail: React.FC = () => {
               <EmptyState
                 icon={<Paperclip className="h-10 w-10" />}
                 title="No documents attached"
-                description="Upload supporting files from the documents page"
+                description={application.is_draft || application.status === 'draft' ? 'Submit the application to unlock document uploads.' : 'Upload supporting files from the documents page'}
                 action={
-                  <Link to="/student/documents">
-                    <Button variant="outline">Upload documents</Button>
-                  </Link>
+                  !application.is_draft && application.status !== 'draft' ? (
+                    <Link to="/student/documents">
+                      <Button variant="outline">Upload documents</Button>
+                    </Link>
+                  ) : undefined
                 }
               />
             ) : (

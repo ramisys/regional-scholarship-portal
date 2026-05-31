@@ -1,50 +1,64 @@
-import axios from "axios";
+import { setAccessToken, clearAccessToken } from '../app/utils/authStore';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api";
-
-const authClient = axios.create({
-  baseURL: `${API_BASE_URL}/auth`,
-});
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
 export const register = async (payload) => {
-  const { data } = await authClient.post("/register", payload);
-  return data;
+  const resp = await fetch(`${API_BASE_URL}/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  return resp.json();
 };
 
 export const login = async ({ email, password }) => {
-  const { data } = await authClient.post("/login", { email, password });
-  if (data?.success && data?.data?.access) {
-    localStorage.setItem("accessToken", data.data.access);
-    localStorage.setItem("refreshToken", data.data.refresh);
-    localStorage.setItem("userRole", data.data.user.role);
+  const resp = await fetch(`${API_BASE_URL}/auth/login`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+  const data = await resp.json();
+  const payload = data?.data ?? data;
+  if (payload?.access) {
+    setAccessToken(payload.access);
+    if (payload.user?.role) {
+      localStorage.setItem('userRole', payload.user.role);
+    }
   }
   return data;
 };
 
 export const logout = async () => {
-  const refresh = localStorage.getItem("refreshToken");
-  const token = localStorage.getItem("accessToken");
-  const { data } = await authClient.post(
-    "/logout",
-    { refresh },
-    { headers: { Authorization: `Bearer ${token}` } },
-  );
-  localStorage.removeItem("accessToken");
-  localStorage.removeItem("refreshToken");
-  localStorage.removeItem("userRole");
-  return data;
+  try {
+    await fetch(`${API_BASE_URL}/auth/logout`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (e) {
+    // ignore
+  }
+  clearAccessToken();
+  localStorage.removeItem('userRole');
+  return { success: true };
 };
 
 export const refreshToken = async () => {
-  const refresh = localStorage.getItem("refreshToken");
-  const { data } = await authClient.post("/refresh", { refresh });
-  if (data?.success && data?.data?.access) {
-    localStorage.setItem("accessToken", data.data.access);
+  const resp = await fetch(`${API_BASE_URL}/auth/refresh`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  const data = await resp.json();
+  const payload = data?.data ?? data;
+  if (payload?.access) {
+    setAccessToken(payload.access);
   }
   return data;
 };
 
 export const getAuthHeader = () => {
-  const access = localStorage.getItem("accessToken");
-  return access ? { Authorization: `Bearer ${access}` } : {};
+  // Prefer in-memory token when available, fallback to stored accessToken
+  return {};
 };

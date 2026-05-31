@@ -162,6 +162,9 @@ CORS_ALLOWED_ORIGINS = [
     if origin.strip()
 ]
 
+# Allow credentialed requests so httpOnly cookies can be used for auth
+CORS_ALLOW_CREDENTIALS = True
+
 CSRF_TRUSTED_ORIGINS = [
     origin.strip()
     for origin in os.getenv('CSRF_TRUSTED_ORIGINS', 'http://localhost:5173').split(',')
@@ -173,6 +176,10 @@ DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'no-reply@regional-scholars
 FRONTEND_RESET_PASSWORD_URL = os.getenv('FRONTEND_RESET_PASSWORD_URL', 'http://localhost:5173/reset-password')
 
 FILE_UPLOAD_MAX_MEMORY_SIZE = int(os.getenv('MAX_UPLOAD_SIZE_BYTES', str(5 * 1024 * 1024)))
+
+# Application-level upload limits
+MAX_DOCUMENTS_PER_APPLICATION = int(os.getenv('MAX_DOCUMENTS_PER_APPLICATION', '10'))
+MAX_UPLOAD_SIZE_BYTES = FILE_UPLOAD_MAX_MEMORY_SIZE
 
 CLOUDINARY_STORAGE = {
     'CLOUD_NAME': os.getenv('CLOUDINARY_CLOUD_NAME', ''),
@@ -198,3 +205,9 @@ if not DEBUG:
     SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
+
+    # Fail-fast if Cloudinary is not configured in production
+    from django.core.exceptions import ImproperlyConfigured
+
+    if not CLOUDINARY_STORAGE.get('CLOUD_NAME') or not CLOUDINARY_STORAGE.get('API_KEY') or not CLOUDINARY_STORAGE.get('API_SECRET'):
+        raise ImproperlyConfigured('Cloudinary storage is enabled but CLOUDINARY_* environment variables are not set')

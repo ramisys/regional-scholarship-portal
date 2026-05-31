@@ -45,12 +45,11 @@ export const Register: React.FC = () => {
     setIsLoading(true);
     try {
       await register({
-        firstName: formData.firstName,
-        lastName: formData.lastName,
         email: formData.email,
         password: formData.password,
         role: formData.role,
         honeypot: formData.honeypot,
+        profile: { full_name: `${formData.firstName} ${formData.lastName}` },
       });
       navigate('/');
     } catch (err) {
