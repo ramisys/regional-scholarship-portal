@@ -3,9 +3,11 @@ import api, { handleApiError } from '../../utils/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Progress } from '../../components/ui/progress';
+import { Badge } from '../../components/ui/badge';
 import { toast } from 'sonner';
 import { FileText, X } from 'lucide-react';
 import { FileUploader } from '../../components/common/FileUploader';
+import { EmptyState } from '../../components/ui/empty-state';
 
 interface UploadedDocument {
   id: string;
@@ -158,10 +160,10 @@ export const DocumentUpload: React.FC = () => {
   };
 
   return (
-    <div className="max-w-5xl mx-auto p-6 space-y-6">
+    <div className="max-w-5xl mx-auto space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Document Upload</h1>
-        <p className="text-gray-600 mt-1">Upload your KYC and supporting documents</p>
+        <h1 className="mb-1 text-gray-900 text-2xl font-semibold">Document Upload</h1>
+        <p className="text-gray-500">Upload your KYC and supporting documents</p>
         {!loadingApplication && activeApplicationId && (
           <p className="text-sm text-gray-500 mt-2">
             Documents will be attached to {applicationTitle || 'your latest application'}.
@@ -175,7 +177,7 @@ export const DocumentUpload: React.FC = () => {
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="border-b">
           <CardTitle>Upload Documents</CardTitle>
           <CardDescription>
             Accepted formats: PDF, JPEG, PNG (Max size: 5MB)
@@ -202,22 +204,23 @@ export const DocumentUpload: React.FC = () => {
       </Card>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="border-b">
           <CardTitle>Uploaded Documents</CardTitle>
           <CardDescription>Manage your uploaded documents</CardDescription>
         </CardHeader>
         <CardContent>
           {documents.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <FileText className="mx-auto h-12 w-12 mb-2 opacity-50" />
-              <p>No documents uploaded yet</p>
-            </div>
+            <EmptyState
+              icon={<FileText className="h-12 w-12" />}
+              title="No documents uploaded yet"
+              description="Upload your first document to get started"
+            />
           ) : (
             <div className="space-y-3">
               {documents.map((doc) => (
                 <div
                   key={doc.id}
-                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
+                  className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-gray-50 hover:bg-gray-100"
                 >
                   <div className="flex items-center space-x-4 flex-1">
                     <FileText className="h-8 w-8 text-blue-500" />
@@ -229,17 +232,17 @@ export const DocumentUpload: React.FC = () => {
                     </div>
                   </div>
                   <div className="flex items-center space-x-3">
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-medium ${
+                    <Badge
+                      className={
                         doc.status === 'approved'
                           ? 'bg-green-100 text-green-700'
                           : doc.status === 'rejected'
                           ? 'bg-red-100 text-red-700'
                           : 'bg-yellow-100 text-yellow-700'
-                      }`}
+                      }
                     >
                       {doc.status}
-                    </span>
+                    </Badge>
                     <Button
                       variant="ghost"
                       size="sm"

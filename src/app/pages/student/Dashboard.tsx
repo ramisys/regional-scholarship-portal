@@ -4,7 +4,9 @@ import { useAuth } from '../../contexts/AuthContext';
 import api, { handleApiError } from '../../utils/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
+import { Badge } from '../../components/ui/badge';
 import { FileText, Upload, CheckCircle, Clock, XCircle, Plus } from 'lucide-react';
+import { EmptyState } from '../../components/ui/empty-state';
 
 interface ApplicationStats {
   total: number;
@@ -59,9 +61,54 @@ export const StudentDashboard: React.FC = () => {
     }
   };
 
+  const statCards = [
+    {
+      title: 'Total Applications',
+      value: stats.total,
+      icon: FileText,
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-50',
+    },
+    {
+      title: 'Pending',
+      value: stats.pending,
+      icon: Clock,
+      color: 'text-yellow-600',
+      bgColor: 'bg-yellow-50',
+    },
+    {
+      title: 'Approved',
+      value: stats.approved,
+      icon: CheckCircle,
+      color: 'text-green-600',
+      bgColor: 'bg-green-50',
+    },
+    {
+      title: 'Rejected',
+      value: stats.rejected,
+      icon: XCircle,
+      color: 'text-red-600',
+      bgColor: 'bg-red-50',
+    },
+  ];
+
+  const getStatusBadge = (status: string) => {
+    const variants: Record<string, string> = {
+      pending: 'bg-yellow-100 text-yellow-700',
+      approved: 'bg-green-100 text-green-700',
+      rejected: 'bg-red-100 text-red-700',
+    };
+
+    return (
+      <Badge className={variants[status] || variants.pending}>
+        {status.charAt(0).toUpperCase() + status.slice(1)}
+      </Badge>
+    );
+  };
+
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center py-16">
         <div className="text-center">
           <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent"></div>
           <p className="mt-4">Loading dashboard...</p>
@@ -71,11 +118,13 @@ export const StudentDashboard: React.FC = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Welcome, {user?.firstName}!</h1>
-          <p className="text-gray-600 mt-1">Track your scholarship applications</p>
+          <h1 className="mb-1 text-gray-900 text-2xl font-semibold">
+            Welcome, {user?.firstName}!
+          </h1>
+          <p className="text-gray-500">Track and manage your scholarship applications</p>
         </div>
         <Link to="/student/apply">
           <Button>
@@ -92,45 +141,24 @@ export const StudentDashboard: React.FC = () => {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Applications</CardTitle>
-            <FileText className="h-4 w-4 text-gray-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending</CardTitle>
-            <Clock className="h-4 w-4 text-yellow-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.pending}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Approved</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.approved}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Rejected</CardTitle>
-            <XCircle className="h-4 w-4 text-red-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.rejected}</div>
-          </CardContent>
-        </Card>
+        {statCards.map((stat) => {
+          const Icon = stat.icon;
+          return (
+            <Card key={stat.title}>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600 mb-1">{stat.title}</p>
+                    <p className="text-2xl font-semibold text-gray-900">{stat.value}</p>
+                  </div>
+                  <div className={`p-3 rounded-lg ${stat.bgColor}`}>
+                    <Icon className={`h-6 w-6 ${stat.color}`} />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -139,51 +167,64 @@ export const StudentDashboard: React.FC = () => {
             <CardTitle>Quick Actions</CardTitle>
             <CardDescription>Manage your scholarship applications</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <Link to="/student/apply">
-              <Button variant="outline" className="w-full justify-start">
-                <FileText className="mr-2 h-4 w-4" />
-                Start New Application
-              </Button>
-            </Link>
-            <Link to="/student/documents">
-              <Button variant="outline" className="w-full justify-start">
-                <Upload className="mr-2 h-4 w-4" />
-                Upload Documents
-              </Button>
-            </Link>
-            <Link to="/student/applications">
-              <Button variant="outline" className="w-full justify-start">
-                <CheckCircle className="mr-2 h-4 w-4" />
-                View Application Status
-              </Button>
-            </Link>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Link to="/student/apply">
+                <div className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-600 hover:bg-blue-50 transition-colors cursor-pointer">
+                  <FileText className="h-8 w-8 text-gray-400 mb-2" />
+                  <h4 className="font-medium text-gray-900 mb-1">Start New Application</h4>
+                  <p className="text-sm text-gray-500">Begin a new scholarship application</p>
+                </div>
+              </Link>
+              <Link to="/student/documents">
+                <div className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-600 hover:bg-blue-50 transition-colors cursor-pointer">
+                  <Upload className="h-8 w-8 text-gray-400 mb-2" />
+                  <h4 className="font-medium text-gray-900 mb-1">Upload Documents</h4>
+                  <p className="text-sm text-gray-500">Add required supporting files</p>
+                </div>
+              </Link>
+              <Link to="/student/applications">
+                <div className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-600 hover:bg-blue-50 transition-colors cursor-pointer">
+                  <CheckCircle className="h-8 w-8 text-gray-400 mb-2" />
+                  <h4 className="font-medium text-gray-900 mb-1">Track Applications</h4>
+                  <p className="text-sm text-gray-500">View status updates and history</p>
+                </div>
+              </Link>
+            </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-            <CardDescription>Your latest application updates</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Recent Activity</CardTitle>
+                <CardDescription>Your latest application updates</CardDescription>
+              </div>
+              <Link to="/student/applications" className="text-sm text-blue-600 hover:underline">
+                View all
+              </Link>
+            </div>
           </CardHeader>
           <CardContent>
             {recentActivity.length === 0 ? (
-              <p className="text-gray-500 text-sm">No recent activity</p>
+              <EmptyState
+                icon={<FileText className="h-12 w-12" />}
+                title="No recent activity"
+                description="Updates on your applications will appear here"
+              />
             ) : (
               <div className="space-y-4">
                 {recentActivity.map((activity) => (
-                  <div key={activity.id} className="flex items-start space-x-3 pb-3 border-b last:border-0">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">{activity.title}</p>
+                  <div
+                    key={activity.id}
+                    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{activity.title}</p>
                       <p className="text-xs text-gray-500 mt-1">{activity.date}</p>
                     </div>
-                    <span className={`text-xs px-2 py-1 rounded ${
-                      activity.status === 'approved' ? 'bg-green-100 text-green-700' :
-                      activity.status === 'rejected' ? 'bg-red-100 text-red-700' :
-                      'bg-yellow-100 text-yellow-700'
-                    }`}>
-                      {activity.status}
-                    </span>
+                    {getStatusBadge(activity.status)}
                   </div>
                 ))}
               </div>

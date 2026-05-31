@@ -80,15 +80,15 @@ export const ApplicationForm: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">Scholarship Application</h1>
-        <p className="text-gray-600 mt-1">Complete all sections to submit your application</p>
+    <div className="max-w-4xl mx-auto space-y-6">
+      <div>
+        <h1 className="mb-1 text-gray-900 text-2xl font-semibold">Scholarship Application</h1>
+        <p className="text-gray-500">Complete all sections to submit your application</p>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)}>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="w-full grid grid-cols-3">
             <TabsTrigger value="personal">Personal Info</TabsTrigger>
             <TabsTrigger value="contact">Contact Info</TabsTrigger>
             <TabsTrigger value="education">Education</TabsTrigger>
@@ -96,7 +96,7 @@ export const ApplicationForm: React.FC = () => {
 
           <TabsContent value="personal">
             <Card>
-              <CardHeader>
+              <CardHeader className="border-b">
                 <CardTitle>Personal Information</CardTitle>
                 <CardDescription>Enter your personal details</CardDescription>
               </CardHeader>
@@ -161,7 +161,7 @@ export const ApplicationForm: React.FC = () => {
 
           <TabsContent value="contact">
             <Card>
-              <CardHeader>
+              <CardHeader className="border-b">
                 <CardTitle>Contact Information</CardTitle>
                 <CardDescription>How can we reach you?</CardDescription>
               </CardHeader>
@@ -246,13 +246,13 @@ export const ApplicationForm: React.FC = () => {
 
           <TabsContent value="education">
             <Card>
-              <CardHeader>
+              <CardHeader className="border-b">
                 <CardTitle>Educational Background</CardTitle>
                 <CardDescription>Add your educational history</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 {fields.map((field, index) => (
-                  <div key={field.id} className="p-4 border rounded-lg space-y-4">
+                  <div key={field.id} className="p-4 border border-gray-200 rounded-lg space-y-4">
                     <div className="flex justify-between items-center">
                       <h4 className="font-medium">School {index + 1}</h4>
                       {fields.length > 1 && (
@@ -331,7 +331,7 @@ export const ApplicationForm: React.FC = () => {
           </TabsContent>
         </Tabs>
 
-        <div className="mt-6 flex justify-between">
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-between">
           <Button type="button" variant="outline" onClick={saveDraft} disabled={isLoading}>
             <Save className="mr-2 h-4 w-4" />
             Save Draft
