@@ -59,12 +59,13 @@ class LoginAPIView(APIView):
 		# Set refresh token as httpOnly cookie
 		response = success_response("Login successful", {"access": access_token, "user": UserSerializer(user).data})
 		cookie_secure = not settings.DEBUG
+		cookie_samesite = getattr(settings, "COOKIE_SAMESITE", "Lax")
 		response.set_cookie(
 			"refresh",
 			str(refresh),
 			httponly=True,
 			secure=cookie_secure,
-			samesite="Lax",
+			samesite=cookie_samesite,
 		)
 		return response
 
@@ -110,7 +111,8 @@ class JWTRefreshAPIView(TokenRefreshView):
 				resp = success_response("Token refreshed", data)
 				if new_refresh:
 					cookie_secure = not settings.DEBUG
-					resp.set_cookie("refresh", new_refresh, httponly=True, secure=cookie_secure, samesite="Lax")
+					cookie_samesite = getattr(settings, "COOKIE_SAMESITE", "Lax")
+					resp.set_cookie("refresh", new_refresh, httponly=True, secure=cookie_secure, samesite=cookie_samesite)
 				return resp
 			except Exception:
 				return error_response("Token refresh failed", {"refresh": ["Invalid refresh token"]}, status.HTTP_400_BAD_REQUEST)

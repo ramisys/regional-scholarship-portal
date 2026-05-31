@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth.password_validation import validate_password as django_validate_password
 from django.utils.html import strip_tags
 from rest_framework import serializers
 
@@ -28,6 +28,10 @@ class RegisterSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Bot submission detected")
         return value
 
+    def validate_password(self, value):
+        django_validate_password(value)
+        return value
+
     def validate_email(self, value):
         return strip_tags(value).strip().lower()
 
@@ -39,11 +43,16 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data.pop("honeypot", None)
-        profile_data = validated_data.pop("profile", {})
+        profile_data = validated_data.pop("profile", None)
         raw_password = validated_data.pop("password")
-        validate_password(raw_password)
+
         user = User.objects.create_user(password=raw_password, **validated_data)
-        ApplicantProfile.objects.create(user=user, **profile_data)
+
+        if profile_data:
+            profile_serializer = ApplicantProfileSerializer(data=profile_data)
+            profile_serializer.is_valid(raise_exception=True)
+            ApplicantProfile.objects.create(user=user, **profile_serializer.validated_data)
+
         return user
 
 

@@ -178,6 +178,10 @@ CSRF_TRUSTED_ORIGINS = [
     if origin.strip()
 ]
 
+# Cookie samesite policy for auth cookies. Set to 'None' in production when using
+# cross-site requests (requires HTTPS). Defaults to 'Lax'.
+COOKIE_SAMESITE = os.getenv('COOKIE_SAMESITE', 'Lax')
+
 EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'no-reply@regional-scholarship.local')
 FRONTEND_RESET_PASSWORD_URL = os.getenv('FRONTEND_RESET_PASSWORD_URL', 'http://localhost:5173/reset-password')
