@@ -9,6 +9,8 @@ from applications.models import ApplicationStatusHistory, ScholarshipApplication
 from applications.serializers import ScholarshipApplicationSerializer
 from core.permissions import IsCoordinator
 from core.responses import error_response, success_response
+from core.email_service import EmailService
+from documents.models import UploadedDocument
 
 
 class CoordinatorApplicationListAPIView(APIView):
@@ -113,3 +115,60 @@ class CoordinatorRecentApplicationsAPIView(APIView):
 		).order_by("-updated_at")[:10]
 		serializer = ScholarshipApplicationSerializer(recent_apps, many=True)
 		return success_response("Recent applications fetched", serializer.data)
+
+
+class CoordinatorNotifyMissingDocumentsAPIView(APIView):
+	"""
+	Send notification to student about missing or incomplete documents.
+	
+	Request body:
+	{
+		"missing_documents": ["id_card", "transcript", "passport"]  # List of document types
+	}
+	"""
+	permission_classes = [IsAuthenticated, IsCoordinator]
+
+	def post(self, request, application_id):
+		# Get application
+		application = ScholarshipApplication.objects.select_related("applicant").filter(id=application_id).first()
+		if not application:
+			return error_response(
+				"Not found", 
+				{"application": ["Application does not exist"]}, 
+				status.HTTP_404_NOT_FOUND
+			)
+
+		# Get list of missing documents
+		missing_documents = request.data.get("missing_documents", [])
+		if not missing_documents or not isinstance(missing_documents, list):
+			return error_response(
+				"Validation failed",
+				{"missing_documents": ["Missing documents list is required and must be a list"]},
+				status.HTTP_400_BAD_REQUEST
+			)
+
+		try:
+			# Send email notification
+			success = EmailService.send_missing_documents_email(application, missing_documents)
+			
+			if success:
+				return success_response(
+					"Notification sent successfully",
+					{
+						"application_id": application.id,
+						"student_email": application.applicant.email,
+						"documents_notified": missing_documents
+					}
+				)
+			else:
+				return error_response(
+					"Failed to send notification",
+					{"email": ["Failed to send email to student"]},
+					status.HTTP_500_INTERNAL_SERVER_ERROR
+				)
+		except Exception as e:
+			return error_response(
+				"Error sending notification",
+				{"error": [str(e)]},
+				status.HTTP_500_INTERNAL_SERVER_ERROR
+			)
