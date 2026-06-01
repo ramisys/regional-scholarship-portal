@@ -17,10 +17,7 @@ services:
       dockerfile: backend/Dockerfile
     restart: always
     env_file:
-      - .env
-    environment:
-      - DJANGO_DEBUG=False
-      - DJANGO_ALLOWED_HOSTS=127.0.0.1,localhost
+      - .env.production
     depends_on:
       - db
     ports:
@@ -31,7 +28,9 @@ services:
   frontend:
     build:
       context: .
-      dockerfile: frontend/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL}
     restart: always
     ports:
       - "80:80"
