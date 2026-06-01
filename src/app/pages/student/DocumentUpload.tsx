@@ -41,6 +41,7 @@ export const DocumentUpload: React.FC = () => {
   const [applicationTitle, setApplicationTitle] = useState('');
   const [hasSubmittedApplication, setHasSubmittedApplication] = useState(false);
   const [loadingApplication, setLoadingApplication] = useState(true);
+  const [loadingDocuments, setLoadingDocuments] = useState(false);
   const [applicationError, setApplicationError] = useState('');
 
   const unwrapData = <T,>(responseData: T | ApiEnvelope<T>) => {
@@ -54,6 +55,12 @@ export const DocumentUpload: React.FC = () => {
   useEffect(() => {
     void fetchApplications();
   }, []);
+
+  useEffect(() => {
+    if (activeApplicationId && hasSubmittedApplication) {
+      void fetchDocuments(activeApplicationId);
+    }
+  }, [activeApplicationId, hasSubmittedApplication]);
 
   const fetchApplications = async () => {
     setLoadingApplication(true);
@@ -81,6 +88,32 @@ export const DocumentUpload: React.FC = () => {
       toast.error(message);
     } finally {
       setLoadingApplication(false);
+    }
+  };
+
+  const fetchDocuments = async (applicationId: string) => {
+    setLoadingDocuments(true);
+
+    try {
+      const response = await api.get(`/documents/application/${applicationId}`);
+      const documentsData = unwrapData<any[]>(response.data);
+      const documentsList = Array.isArray(documentsData) ? documentsData : [];
+
+      const mappedDocuments = documentsList.map((doc) => ({
+        id: String(doc.id),
+        fileName: doc.file.split('/').pop() || 'document',
+        fileSize: 0,
+        fileType: 'application/pdf',
+        uploadDate: doc.uploaded_at,
+        status: 'pending' as const,
+      }));
+
+      setDocuments(mappedDocuments);
+    } catch (err) {
+      console.error('Failed to fetch documents:', err);
+      setDocuments([]);
+    } finally {
+      setLoadingDocuments(false);
     }
   };
 
@@ -115,7 +148,7 @@ export const DocumentUpload: React.FC = () => {
     setUploadProgress(0);
 
     try {
-      const response = await api.post('/documents/upload', formData, {
+      await api.post('/documents/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
         onUploadProgress: (progressEvent) => {
           const progress = progressEvent.total
@@ -125,18 +158,10 @@ export const DocumentUpload: React.FC = () => {
         },
       });
 
-      setDocuments((prev: UploadedDocument[]) => [
-        ...prev,
-        {
-          id: String(response.data?.data?.id ?? `${Date.now()}-${Math.random()}`),
-          fileName: file.name,
-          fileSize: file.size,
-          fileType: file.type,
-          uploadDate: response.data?.data?.uploaded_at ?? new Date().toISOString(),
-          status: 'pending',
-        },
-      ]);
       toast.success('Document uploaded successfully!');
+      
+      // Refresh documents list after upload
+      await fetchDocuments(activeApplicationId);
     } catch (err) {
       toast.error(handleApiError(err));
     } finally {
@@ -239,7 +264,7 @@ export const DocumentUpload: React.FC = () => {
           <CardDescription>Manage your uploaded documents</CardDescription>
         </CardHeader>
         <CardContent>
-          {loadingApplication ? (
+          {loadingDocuments ? (
             <div className="space-y-3" aria-busy="true" aria-live="polite">
               {Array.from({ length: 3 }).map((_, index) => (
                 <div key={index} className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 p-4">

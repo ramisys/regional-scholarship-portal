@@ -9,6 +9,23 @@ from documents.models import UploadedDocument
 from documents.serializers import UploadedDocumentSerializer
 
 
+class DocumentListAPIView(APIView):
+	permission_classes = [IsAuthenticated]
+
+	def get(self, request, application_id):
+		try:
+			application = ScholarshipApplication.objects.get(id=application_id)
+		except ScholarshipApplication.DoesNotExist:
+			return error_response("Not found", {"application": ["Application does not exist"]}, status.HTTP_404_NOT_FOUND)
+
+		if request.user.role != "coordinator" and application.applicant != request.user:
+			return error_response("Forbidden", {"detail": "You do not have access"}, status.HTTP_403_FORBIDDEN)
+
+		documents = UploadedDocument.objects.filter(application=application).order_by("-uploaded_at")
+		serializer = UploadedDocumentSerializer(documents, many=True)
+		return success_response("Documents fetched", serializer.data)
+
+
 class DocumentUploadAPIView(APIView):
 	permission_classes = [IsAuthenticated]
 	throttle_scope = "upload"
