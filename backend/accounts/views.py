@@ -12,6 +12,8 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenRefreshView
 
+from datetime import timedelta
+
 from accounts.models import ApplicantProfile
 from accounts.serializers import (
 	ChangePasswordSerializer,
@@ -67,12 +69,15 @@ class LoginAPIView(APIView):
 		response = success_response("Login successful", {"access": access_token, "user": UserSerializer(user).data})
 		cookie_secure = not settings.DEBUG
 		cookie_samesite = getattr(settings, "COOKIE_SAMESITE", "Lax")
+		refresh_lifetime = settings.SIMPLE_JWT.get('REFRESH_TOKEN_LIFETIME', timedelta(days=7))
+		max_age = int(refresh_lifetime.total_seconds()) if isinstance(refresh_lifetime, timedelta) else refresh_lifetime
 		response.set_cookie(
 			"refresh",
 			str(refresh),
 			httponly=True,
 			secure=cookie_secure,
 			samesite=cookie_samesite,
+			max_age=max_age,
 		)
 		return response
 
@@ -119,7 +124,9 @@ class JWTRefreshAPIView(TokenRefreshView):
 				if new_refresh:
 					cookie_secure = not settings.DEBUG
 					cookie_samesite = getattr(settings, "COOKIE_SAMESITE", "Lax")
-					resp.set_cookie("refresh", new_refresh, httponly=True, secure=cookie_secure, samesite=cookie_samesite)
+					refresh_lifetime = settings.SIMPLE_JWT.get('REFRESH_TOKEN_LIFETIME', timedelta(days=7))
+					max_age = int(refresh_lifetime.total_seconds()) if isinstance(refresh_lifetime, timedelta) else refresh_lifetime
+					resp.set_cookie("refresh", new_refresh, httponly=True, secure=cookie_secure, samesite=cookie_samesite, max_age=max_age)
 				return resp
 			except Exception:
 				return error_response("Token refresh failed", {"refresh": ["Invalid refresh token"]}, status.HTTP_400_BAD_REQUEST)
@@ -135,7 +142,9 @@ class JWTRefreshAPIView(TokenRefreshView):
 		resp = success_response("Token refreshed", out)
 		if refresh_value:
 			cookie_secure = not settings.DEBUG
-			resp.set_cookie("refresh", refresh_value, httponly=True, secure=cookie_secure, samesite="Lax")
+			refresh_lifetime = settings.SIMPLE_JWT.get('REFRESH_TOKEN_LIFETIME', timedelta(days=7))
+			max_age = int(refresh_lifetime.total_seconds()) if isinstance(refresh_lifetime, timedelta) else refresh_lifetime
+			resp.set_cookie("refresh", refresh_value, httponly=True, secure=cookie_secure, samesite="Lax", max_age=max_age)
 		return resp
 
 
