@@ -159,6 +159,9 @@ api.interceptors.response.use(
 export default api;
 
 export const handleApiError = (error: unknown): string => {
+  if (error instanceof Error) {
+    return error.message || 'An error occurred';
+  }
   if (axios.isAxiosError(error)) {
     return error.response?.data?.message || error.message || 'An error occurred';
   }

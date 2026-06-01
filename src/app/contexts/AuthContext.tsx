@@ -115,6 +115,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         body: JSON.stringify({ email, password }),
       });
       const json = await resp.json();
+
+      if (!resp.ok) {
+        const error = new Error(json?.message || 'Login failed');
+        (error as any).response = { status: resp.status, data: json };
+        throw error;
+      }
+
       const payload = json?.data ?? json;
       const newToken = payload?.access;
       const newUser = payload?.user;
@@ -140,11 +147,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
-      await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/auth/register`, {
+      const resp = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
+      const json = await resp.json();
+
+      if (!resp.ok) {
+        const error = new Error(json?.message || 'Registration failed');
+        (error as any).response = { status: resp.status, data: json };
+        throw error;
+      }
 
       // Auto-login after registration
       await login(data.email, data.password);
