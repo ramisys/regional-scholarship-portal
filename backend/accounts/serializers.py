@@ -33,7 +33,10 @@ class RegisterSerializer(serializers.ModelSerializer):
         return value
 
     def validate_email(self, value):
-        return strip_tags(value).strip().lower()
+        email = strip_tags(value).strip().lower()
+        if User.objects.filter(email=email).exists():
+            raise serializers.ValidationError("An account with this email already exists")
+        return email
 
     def validate_role(self, value):
         allowed_roles = [User.Role.STUDENT, User.Role.COORDINATOR]

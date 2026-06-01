@@ -6,6 +6,7 @@ from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.utils.encoding import force_bytes
 from rest_framework import status
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -33,7 +34,13 @@ class RegisterAPIView(APIView):
 
 	def post(self, request):
 		serializer = RegisterSerializer(data=request.data)
-		serializer.is_valid(raise_exception=True)
+		if not serializer.is_valid():
+			# Extract the first validation error message for display
+			errors = serializer.errors
+			if "email" in errors:
+				return error_response(str(errors["email"][0]), {"email": errors["email"]}, status.HTTP_400_BAD_REQUEST)
+			# For other errors, return all errors
+			return error_response("Validation failed", errors, status.HTTP_400_BAD_REQUEST)
 		user = serializer.save()
 		user_data = UserSerializer(user).data
 		return success_response("Registration successful", user_data, status.HTTP_201_CREATED)
