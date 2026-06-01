@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
-import { GraduationCap, Home, FileText, Upload, CheckCircle, LogOut, User, Menu } from 'lucide-react';
+import { GraduationCap, Home, FileText, Upload, CheckCircle, LogOut, User, Menu, Loader2 } from 'lucide-react';
 import { DashboardLayout } from './layout/DashboardLayout';
 
 interface LayoutProps {
@@ -21,10 +21,16 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const [isLoggingOut, setIsLoggingOut] = React.useState(false);
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      logout();
+      navigate('/login');
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   const studentNavItems = [
@@ -101,9 +107,18 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                     <p className="text-xs text-gray-500">{user?.email}</p>
                   </div>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Logout
+                  <DropdownMenuItem onClick={handleLogout} disabled={isLoggingOut} className="cursor-pointer">
+                    {isLoggingOut ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Logging out...
+                      </>
+                    ) : (
+                      <>
+                        <LogOut className="mr-2 h-4 w-4" />
+                        Logout
+                      </>
+                    )}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
