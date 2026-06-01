@@ -78,6 +78,7 @@ class LoginAPIView(APIView):
 			secure=cookie_secure,
 			samesite=cookie_samesite,
 			max_age=max_age,
+			path="/",
 		)
 		return response
 
@@ -126,7 +127,7 @@ class JWTRefreshAPIView(TokenRefreshView):
 					cookie_samesite = getattr(settings, "COOKIE_SAMESITE", "Lax")
 					refresh_lifetime = settings.SIMPLE_JWT.get('REFRESH_TOKEN_LIFETIME', timedelta(days=7))
 					max_age = int(refresh_lifetime.total_seconds()) if isinstance(refresh_lifetime, timedelta) else refresh_lifetime
-					resp.set_cookie("refresh", new_refresh, httponly=True, secure=cookie_secure, samesite=cookie_samesite, max_age=max_age)
+					resp.set_cookie("refresh", new_refresh, httponly=True, secure=cookie_secure, samesite=cookie_samesite, max_age=max_age, path="/")
 				return resp
 			except Exception:
 				return error_response("Token refresh failed", {"refresh": ["Invalid refresh token"]}, status.HTTP_400_BAD_REQUEST)
@@ -144,7 +145,7 @@ class JWTRefreshAPIView(TokenRefreshView):
 			cookie_secure = not settings.DEBUG
 			refresh_lifetime = settings.SIMPLE_JWT.get('REFRESH_TOKEN_LIFETIME', timedelta(days=7))
 			max_age = int(refresh_lifetime.total_seconds()) if isinstance(refresh_lifetime, timedelta) else refresh_lifetime
-			resp.set_cookie("refresh", refresh_value, httponly=True, secure=cookie_secure, samesite="Lax", max_age=max_age)
+			resp.set_cookie("refresh", refresh_value, httponly=True, secure=cookie_secure, samesite="Lax", max_age=max_age, path="/")
 		return resp
 
 
