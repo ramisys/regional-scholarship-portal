@@ -1,0 +1,189 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Your Application - {{ app_name }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        .content {
+            padding: 40px;
+        }
+        .content h2 {
+            font-size: 22px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .content p {
+            margin-bottom: 15px;
+            font-size: 14px;
+            line-height: 1.8;
+            color: #555;
+        }
+        .reminder-box {
+            background-color: #faf3ff;
+            border: 2px solid #d8b4fe;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        .reminder-box strong {
+            color: #6d28d9;
+            display: block;
+            margin-bottom: 10px;
+        }
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+            color: white;
+            padding: 12px 32px;
+            text-decoration: none;
+            border-radius: 4px;
+            margin: 20px 0;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .info-box {
+            background-color: #f8f9fa;
+            border-left: 4px solid #8b5cf6;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        .checklist {
+            list-style: none;
+            padding: 0;
+        }
+        .checklist li {
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+            color: #555;
+        }
+        .checklist li:before {
+            content: "□";
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+            color: #8b5cf6;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 30px 40px;
+            border-top: 1px solid #ddd;
+            font-size: 12px;
+            color: #999;
+            text-align: center;
+        }
+        .footer p {
+            margin-bottom: 10px;
+        }
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        @media (max-width: 600px) {
+            .container {
+                margin: 0;
+                border-radius: 0;
+            }
+            .header {
+                padding: 30px 15px;
+            }
+            .content {
+                padding: 25px;
+            }
+            .footer {
+                padding: 20px 25px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📝 Complete Your Application</h1>
+            <p style="margin-top: 10px;">Don't miss the deadline!</p>
+        </div>
+
+        <div class="content">
+            <h2>Hello {{ user_name }},</h2>
+            
+            <p>We noticed that your scholarship application is still incomplete. We'd love to help you get it submitted!</p>
+
+            <div class="reminder-box">
+                <strong>📌 Your Incomplete Application:</strong>
+                {{ application_title }} (Reference #{{ application_id }})
+            </div>
+
+            <p style="text-align: center;">
+                <a href="{{ application_url }}" class="cta-button">Continue Application →</a>
+            </p>
+
+            <h2 style="font-size: 18px; margin-top: 30px;">To Complete Your Application:</h2>
+            <ul class="checklist">
+                <li>Fill in all required personal information</li>
+                <li>Write your personal statement</li>
+                <li>Upload all required documents</li>
+                <li>Review your information for accuracy</li>
+                <li>Submit your application</li>
+            </ul>
+
+            <div class="info-box">
+                <strong>💡 Pro Tip:</strong> Completing your application early gives you time to make any corrections and ensures you don't miss the deadline.
+            </div>
+
+            <h2 style="font-size: 18px; margin-top: 30px;">Why Complete Your Application?</h2>
+            <p>
+                ✓ Don't miss the submission deadline<br>
+                ✓ Give our team more time to review<br>
+                ✓ Increase your chances of approval<br>
+                ✓ Receive timely status updates
+            </p>
+
+            <p style="margin-top: 20px;">If you encounter any issues or need help completing your application, our support team is here to assist you.</p>
+        </div>
+
+        <div class="footer">
+            <p><strong>{{ app_name }}</strong></p>
+            <p>
+                Need assistance? <a href="mailto:{{ support_email }}">Contact our support team</a><br>
+                {% if support_phone %}Phone: {{ support_phone }}<br>{% endif %}
+            </p>
+            <p style="margin-top: 20px; border-top: 1px solid #ddd; padding-top: 20px;">
+                © 2024 {{ app_name }}. All rights reserved.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,182 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Uploaded - {{ app_name }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        .success-badge {
+            display: inline-block;
+            background-color: #10b981;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .content {
+            padding: 40px;
+        }
+        .content h2 {
+            font-size: 22px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .content p {
+            margin-bottom: 15px;
+            font-size: 14px;
+            line-height: 1.8;
+            color: #555;
+        }
+        .document-box {
+            background-color: #f8f9fa;
+            border: 2px solid #e5e7eb;
+            padding: 25px;
+            margin: 20px 0;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .document-icon {
+            font-size: 40px;
+            margin-bottom: 15px;
+        }
+        .document-type {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .document-date {
+            font-size: 13px;
+            color: #999;
+        }
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 32px;
+            text-decoration: none;
+            border-radius: 4px;
+            margin: 20px 0;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .info-box {
+            background-color: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 30px 40px;
+            border-top: 1px solid #ddd;
+            font-size: 12px;
+            color: #999;
+            text-align: center;
+        }
+        .footer p {
+            margin-bottom: 10px;
+        }
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        @media (max-width: 600px) {
+            .container {
+                margin: 0;
+                border-radius: 0;
+            }
+            .header {
+                padding: 30px 15px;
+            }
+            .content {
+                padding: 25px;
+            }
+            .footer {
+                padding: 20px 25px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📄 Document Uploaded</h1>
+            <p style="margin-top: 15px;"><span class="success-badge">Successfully Uploaded</span></p>
+        </div>
+
+        <div class="content">
+            <h2>Hello {{ user_name }},</h2>
+            
+            <p>Great! We have successfully received your document.</p>
+
+            <div class="document-box">
+                <div class="document-icon">📋</div>
+                <div class="document-type">{{ document_type }}</div>
+                <div class="document-date">Uploaded on {{ uploaded_at|date:"M d, Y H:i" }}</div>
+            </div>
+
+            <div class="info-box">
+                <strong>📌 Application Reference:</strong> #{{ application_id }}
+            </div>
+
+            <p style="text-align: center;">
+                <a href="{{ application_url }}" class="cta-button">View Application →</a>
+            </p>
+
+            <h2 style="font-size: 18px; margin-top: 30px;">What's Next?</h2>
+            <p>
+                ✓ Your document has been stored securely<br>
+                ✓ It will be reviewed as part of your application<br>
+                ✓ We'll notify you if we need any clarification<br>
+            </p>
+
+            <p>If you need to upload additional documents, you can do so at any time from your application dashboard.</p>
+        </div>
+
+        <div class="footer">
+            <p><strong>{{ app_name }}</strong></p>
+            <p>
+                Questions? <a href="mailto:{{ support_email }}">Contact our support team</a><br>
+                {% if support_phone %}Phone: {{ support_phone }}<br>{% endif %}
+            </p>
+            <p style="margin-top: 20px; border-top: 1px solid #ddd; padding-top: 20px;">
+                © 2024 {{ app_name }}. All rights reserved.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

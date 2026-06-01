@@ -1,0 +1,215 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Application Status Update - {{ app_name }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        .content {
+            padding: 40px;
+        }
+        .content h2 {
+            font-size: 22px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .content p {
+            margin-bottom: 15px;
+            font-size: 14px;
+            line-height: 1.8;
+            color: #555;
+        }
+        .status-change {
+            background-color: #f8f9fa;
+            border: 2px solid #ddd;
+            padding: 25px;
+            margin: 20px 0;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .status-old {
+            font-size: 13px;
+            color: #999;
+            margin-bottom: 10px;
+        }
+        .status-old span {
+            background-color: #e5e7eb;
+            color: #666;
+            padding: 6px 12px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        .status-arrow {
+            margin: 15px 0;
+            font-size: 20px;
+            color: #667eea;
+        }
+        .status-new {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        .status-pending {
+            color: #f59e0b;
+        }
+        .status-approved {
+            color: #10b981;
+        }
+        .status-rejected {
+            color: #ef4444;
+        }
+        .status-under-review {
+            color: #3b82f6;
+        }
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 32px;
+            text-decoration: none;
+            border-radius: 4px;
+            margin: 20px 0;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .info-box {
+            background-color: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .info-box strong {
+            display: block;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 30px 40px;
+            border-top: 1px solid #ddd;
+            font-size: 12px;
+            color: #999;
+            text-align: center;
+        }
+        .footer p {
+            margin-bottom: 10px;
+        }
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        @media (max-width: 600px) {
+            .container {
+                margin: 0;
+                border-radius: 0;
+            }
+            .header {
+                padding: 30px 15px;
+            }
+            .content {
+                padding: 25px;
+            }
+            .footer {
+                padding: 20px 25px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Status Update</h1>
+            <p style="margin-top: 10px;">Your application status has changed</p>
+        </div>
+
+        <div class="content">
+            <h2>Hello {{ user_name }},</h2>
+            
+            <p>We wanted to inform you that your scholarship application status has been updated.</p>
+
+            <div class="status-change">
+                <div class="status-old">
+                    Previous Status: <span>{{ old_status }}</span>
+                </div>
+                <div class="status-arrow">↓</div>
+                <div class="status-new status-{% if new_status == 'Approved' %}approved{% elif new_status == 'Rejected' %}rejected{% elif new_status == 'Under Review' %}under-review{% else %}pending{% endif %}">
+                    {{ new_status }}
+                </div>
+                <div style="font-size: 12px; color: #999; margin-top: 10px;">
+                    Updated on {{ updated_at|date:"M d, Y H:i" }}
+                </div>
+            </div>
+
+            <div class="info-box">
+                <strong>📋 Application Reference:</strong>
+                Reference #{{ application_id }}<br>
+                <strong>Title:</strong> {{ application_title }}
+            </div>
+
+            {% if status_message %}
+            <div class="info-box" style="border-left-color: #3b82f6;">
+                <strong>📝 Additional Information:</strong>
+                {{ status_message }}
+            </div>
+            {% endif %}
+
+            <p style="text-align: center;">
+                <a href="{{ application_url }}" class="cta-button">View Full Application →</a>
+            </p>
+
+            {% if new_status == 'Approved' %}
+            <p><strong style="color: #10b981; font-size: 16px;">🎉 Congratulations!</strong><br>
+            Your application has been approved! Please check the application details for next steps and any further instructions.</p>
+            {% elif new_status == 'Rejected' %}
+            <p>We appreciate your interest in our scholarship program. While your application was not selected at this time, we encourage you to apply again in the future.</p>
+            {% elif new_status == 'Under Review' %}
+            <p>Your application is now being reviewed by our team. We will notify you of any updates or if we need additional information.</p>
+            {% endif %}
+
+            <p style="margin-top: 20px;">If you have any questions about your application status, please don't hesitate to contact our support team.</p>
+        </div>
+
+        <div class="footer">
+            <p><strong>{{ app_name }}</strong></p>
+            <p>
+                Have questions? <a href="mailto:{{ support_email }}">Contact our support team</a><br>
+                {% if support_phone %}Phone: {{ support_phone }}<br>{% endif %}
+            </p>
+            <p style="margin-top: 20px; border-top: 1px solid #ddd; padding-top: 20px;">
+                © 2024 {{ app_name }}. All rights reserved.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

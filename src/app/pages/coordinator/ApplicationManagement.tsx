@@ -22,7 +22,7 @@ import {
 } from '../../components/ui/dialog';
 import { Badge } from '../../components/ui/badge';
 import { toast } from 'sonner';
-import { Filter, Search, Eye, CheckCircle, XCircle, FileText } from 'lucide-react';
+import { Filter, Search, Eye, CheckCircle, XCircle, FileText, AlertCircle } from 'lucide-react';
 import { EmptyState } from '../../components/ui/empty-state';
 import { ButtonLoader, LoadingErrorState, PageLoader, SkeletonCard, SkeletonTable } from '../../components/loading';
 
@@ -54,6 +54,16 @@ export const ApplicationManagement: React.FC = () => {
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [showMissingDocsModal, setShowMissingDocsModal] = useState(false);
+  const [selectedMissingDocs, setSelectedMissingDocs] = useState<string[]>([]);
+  const [notificationLoading, setNotificationLoading] = useState(false);
+
+  const documentTypes = [
+    { value: 'id_card', label: 'ID Card' },
+    { value: 'passport', label: 'Passport' },
+    { value: 'transcript', label: 'Transcript' },
+    { value: 'other', label: 'Other Documents' },
+  ];
 
   useEffect(() => {
     void fetchApplications();
@@ -146,6 +156,33 @@ export const ApplicationManagement: React.FC = () => {
     } finally {
       setActionLoading(false);
     }
+  };
+
+  const handleNotifyMissingDocuments = async () => {
+    if (!selectedApplication || selectedMissingDocs.length === 0) {
+      toast.error('Please select at least one missing document');
+      return;
+    }
+
+    setNotificationLoading(true);
+    try {
+      await api.post(`/dashboard/applications/${selectedApplication.id}/notify-missing-documents`, {
+        missing_documents: selectedMissingDocs,
+      });
+      toast.success('Student notified about missing documents');
+      setShowMissingDocsModal(false);
+      setSelectedMissingDocs([]);
+    } catch (err) {
+      toast.error(handleApiError(err));
+    } finally {
+      setNotificationLoading(false);
+    }
+  };
+
+  const toggleDocumentSelection = (docType: string) => {
+    setSelectedMissingDocs((prev) =>
+      prev.includes(docType) ? prev.filter((d) => d !== docType) : [...prev, docType]
+    );
   };
 
   const getStatusBadge = (status: string) => {
@@ -361,6 +398,17 @@ export const ApplicationManagement: React.FC = () => {
             {selectedApplication?.status === 'pending' && (
               <>
                 <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSelectedMissingDocs([]);
+                    setShowMissingDocsModal(true);
+                  }}
+                  disabled={actionLoading || notificationLoading}
+                >
+                  <AlertCircle className="mr-2 h-4 w-4" />
+                  Notify Missing Docs
+                </Button>
+                <Button
                   variant="destructive"
                   onClick={() => handleReject(selectedApplication.id)}
                   disabled={actionLoading}
@@ -385,6 +433,58 @@ export const ApplicationManagement: React.FC = () => {
                 </Button>
               </>
             )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showMissingDocsModal} onOpenChange={setShowMissingDocsModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Notify About Missing Documents</DialogTitle>
+            <DialogDescription>
+              Select which documents are missing and the student will be notified via email.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {documentTypes.map((docType) => (
+              <div key={docType.value} className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  id={docType.value}
+                  checked={selectedMissingDocs.includes(docType.value)}
+                  onChange={() => toggleDocumentSelection(docType.value)}
+                  className="w-4 h-4 rounded border border-gray-300 cursor-pointer"
+                />
+                <label
+                  htmlFor={docType.value}
+                  className="text-sm font-medium cursor-pointer text-gray-700"
+                >
+                  {docType.label}
+                </label>
+              </div>
+            ))}
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowMissingDocsModal(false)}
+              disabled={notificationLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleNotifyMissingDocuments}
+              disabled={selectedMissingDocs.length === 0}
+            >
+              <ButtonLoader isLoading={notificationLoading} loadingLabel="Sending...">
+                <span className="inline-flex items-center">
+                  <AlertCircle className="mr-2 h-4 w-4" />
+                  Send Notification
+                </span>
+              </ButtonLoader>
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
