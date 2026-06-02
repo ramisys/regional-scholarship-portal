@@ -25,5 +25,6 @@ urlpatterns = [
     path('api/documents/', include('documents.urls')),
     path('api/student/', include('student.urls')),
     path('api/dashboard/', include('coordinator.urls')),
+    path('api/core/', include('core.urls')),
     path('api/', include('verification.urls')),
 ]

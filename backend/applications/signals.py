@@ -10,6 +10,7 @@ from django.dispatch import receiver
 from django.conf import settings
 from applications.models import ScholarshipApplication, ApplicationStatusHistory
 from core.email_service import EmailService
+from core.audit_service import log_application_event
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +32,19 @@ def send_application_submitted_email(sender, instance, created, **kwargs):
     # Only send email for non-draft applications
     if not instance.is_draft and instance.submission_date:
         try:
+            # Audit: application submitted
+            try:
+                log_application_event(
+                    user=getattr(instance, "applicant", None),
+                    request=None,
+                    action_type="application_submitted",
+                    description=f"Application {instance.pk} submitted",
+                    resource_type="ScholarshipApplication",
+                    resource_id=str(instance.pk),
+                    severity="INFO",
+                )
+            except Exception:
+                logger.exception("Failed to log audit event for application submission")
             success = EmailService.send_application_submitted_email(instance)
             if success:
                 logger.info(f"Application submitted email sent to {instance.applicant.email}")
@@ -63,6 +77,22 @@ def send_status_update_email(sender, instance, created, **kwargs):
             old_status = instance.old_status
             new_status = instance.new_status
             message = instance.notes
+
+            # Audit: application status change
+            try:
+                log_application_event(
+                    user=getattr(application, "coordinator", None),
+                    request=None,
+                    action_type="application_status_change",
+                    description=f"Application {application.pk} status {old_status} -> {new_status}",
+                    resource_type="ScholarshipApplication",
+                    resource_id=str(application.pk),
+                    old_value={"status": old_status},
+                    new_value={"status": new_status},
+                    severity="INFO",
+                )
+            except Exception:
+                logger.exception("Failed to log audit event for application status change")
             
             success = EmailService.send_status_update_email(
                 application=application,

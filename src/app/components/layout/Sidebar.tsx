@@ -7,6 +7,7 @@ import {
   LogOut,
   Upload,
   Users,
+  Activity,
 } from "lucide-react";
 import { cn } from "../../utils/cn";
 import { useAuth } from "../../contexts/AuthContext";
@@ -25,6 +26,7 @@ export const Sidebar = () => {
   const coordinatorLinks = [
     { to: "/coordinator/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { to: "/coordinator/applications", label: "Applications", icon: Users },
+    { to: "/coordinator/audit-logs", label: "Audit Logs", icon: Activity },
   ];
 
   const links = user?.role === "coordinator" ? coordinatorLinks : studentLinks;

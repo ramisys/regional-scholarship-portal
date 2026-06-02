@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
-import { GraduationCap, Home, FileText, Upload, CheckCircle, LogOut, User, Menu, Loader2 } from 'lucide-react';
+import { GraduationCap, Home, FileText, Upload, CheckCircle, LogOut, User, Menu, Loader2, Activity } from 'lucide-react';
 import { DashboardLayout } from './layout/DashboardLayout';
 
 interface LayoutProps {
@@ -42,6 +42,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const coordinatorNavItems = [
     { path: '/coordinator/dashboard', label: 'Dashboard', icon: Home },
     { path: '/coordinator/applications', label: 'Applications', icon: FileText },
+    { path: '/coordinator/audit-logs', label: 'Audit Logs', icon: Activity },
   ];
 
   const navItems = user?.role === 'coordinator' ? coordinatorNavItems : studentNavItems;

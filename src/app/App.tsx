@@ -35,6 +35,9 @@ const CoordinatorDashboard = lazy(() =>
 const ApplicationManagement = lazy(() =>
   import('./pages/coordinator/ApplicationManagement').then((module) => ({ default: module.ApplicationManagement }))
 );
+const AuditLogs = lazy(() =>
+  import('./pages/coordinator/AuditLogs').then((module) => ({ default: module.AuditLogs }))
+);
 
 export default function App() {
   return (
@@ -137,6 +140,17 @@ export default function App() {
                 <ProtectedRoute allowedRoles={['coordinator']}>
                   <Layout>
                     <ApplicationManagement />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/coordinator/audit-logs"
+              element={
+                <ProtectedRoute allowedRoles={['coordinator']}>
+                  <Layout>
+                    <AuditLogs />
                   </Layout>
                 </ProtectedRoute>
               }

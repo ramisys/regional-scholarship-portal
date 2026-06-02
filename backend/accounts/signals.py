@@ -10,6 +10,7 @@ from django.dispatch import receiver
 from django.conf import settings
 from accounts.models import User
 from core.email_service import EmailService
+from core.audit_service import log_auth_event
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +33,17 @@ def send_welcome_email_on_registration(sender, instance, created, **kwargs):
     
     if created and instance.is_active:
         try:
+            # Audit: user registration
+            try:
+                log_auth_event(
+                    user=instance,
+                    request=None,
+                    action_type="user_registration",
+                    description=f"New user registered: {instance.email}",
+                    severity="INFO",
+                )
+            except Exception:
+                logger.exception("Failed to log audit event for user registration")
             # Only send welcome email for student registrations (not coordinators)
             if instance.role == User.Role.STUDENT:
                 logger.info(f"Sending welcome email to {instance.email}")
