@@ -26,6 +26,8 @@ class Command(BaseCommand):
             self.stdout.write(self.style.ERROR('   ⚠️  CONSOLE BACKEND DETECTED - Emails are being printed, not sent!'))
         elif 'smtp' in backend:
             self.stdout.write(self.style.SUCCESS('   ✓ SMTP Backend configured'))
+        elif 'sendgrid' in backend.lower():
+            self.stdout.write(self.style.SUCCESS('   ✓ SendGrid Backend configured'))
         self.stdout.write('')
 
         # 2. Check email configuration
@@ -35,11 +37,14 @@ class Command(BaseCommand):
         self.stdout.write(f"   USE_TLS: {settings.EMAIL_USE_TLS}")
         self.stdout.write(f"   HOST_USER: {settings.EMAIL_HOST_USER or 'NOT SET'}")
         self.stdout.write(f"   HOST_PASSWORD: {'SET' if settings.EMAIL_HOST_PASSWORD else 'NOT SET'}")
+        self.stdout.write(f"   SENDGRID_API_KEY: {'SET' if getattr(settings, 'SENDGRID_API_KEY', '') else 'NOT SET'}")
         self.stdout.write(f"   DEFAULT_FROM_EMAIL: {settings.DEFAULT_FROM_EMAIL}")
         self.stdout.write(f"   FRONTEND_URL: {settings.FRONTEND_URL}")
         
-        if not settings.EMAIL_HOST_USER or not settings.EMAIL_HOST_PASSWORD:
-            self.stdout.write(self.style.ERROR('   ⚠️  Missing credentials!'))
+        if ('smtp' in backend and (not settings.EMAIL_HOST_USER or not settings.EMAIL_HOST_PASSWORD)):
+            self.stdout.write(self.style.ERROR('   ⚠️  Missing SMTP credentials!'))
+        if ('sendgrid' in backend.lower() and not getattr(settings, 'SENDGRID_API_KEY', '')):
+            self.stdout.write(self.style.ERROR('   ⚠️  Missing SendGrid API key!'))
         self.stdout.write('')
 
         # 3. Check if EmailLog table exists

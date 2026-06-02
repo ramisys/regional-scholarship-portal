@@ -101,7 +101,10 @@ export const ApplicationManagement: React.FC = () => {
     }
 
     if (regionFilter !== 'all') {
-      filtered = filtered.filter((app) => app.region === regionFilter);
+      filtered = filtered.filter((app) => {
+        const appRegion = app.region || '';
+        return regionFilter === 'unknown' ? !appRegion : appRegion === regionFilter;
+      });
     }
 
     if (statusFilter !== 'all') {
@@ -199,7 +202,7 @@ export const ApplicationManagement: React.FC = () => {
     );
   };
 
-  const uniqueRegions = Array.from(new Set(applications.map((app) => app.region)));
+  const uniqueRegions = Array.from(new Set(applications.map((app) => app.region).filter((region) => region && region.trim())));
 
   return (
     <div className="space-y-6">
@@ -243,8 +246,8 @@ export const ApplicationManagement: React.FC = () => {
                 <SelectContent>
                   <SelectItem value="all">All Regions</SelectItem>
                   {uniqueRegions.map((region) => (
-                    <SelectItem key={region} value={region}>
-                      {region}
+                    <SelectItem key={region} value={region || 'unknown'}>
+                      {region || 'Unknown Region'}
                     </SelectItem>
                   ))}
                 </SelectContent>

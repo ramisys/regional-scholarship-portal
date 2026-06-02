@@ -192,13 +192,14 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
 COOKIE_SAMESITE = os.getenv('COOKIE_SAMESITE', 'Lax')
 
 # Email Configuration
-# Use Gmail SMTP in production or console backend for development
+# Use Gmail SMTP in production, SendGrid when configured, or console backend for development
 EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
 EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
 EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
 EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+SENDGRID_API_KEY = os.getenv('SENDGRID_API_KEY', '')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'no-reply@regional-scholarship.local')
 FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
 FRONTEND_RESET_PASSWORD_URL = os.getenv('FRONTEND_RESET_PASSWORD_URL', 'http://localhost:5173/reset-password')
