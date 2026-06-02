@@ -203,6 +203,13 @@ DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'no-reply@regional-scholars
 FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
 FRONTEND_RESET_PASSWORD_URL = os.getenv('FRONTEND_RESET_PASSWORD_URL', 'http://localhost:5173/reset-password')
 
+# Timeout (seconds) for SMTP connections
+EMAIL_TIMEOUT = int(os.getenv('EMAIL_TIMEOUT', '20'))
+
+# If true, emails will be queued to a background thread instead of blocking the request.
+# For production use, prefer a real task queue (Celery, RQ, etc.).
+ENABLE_BACKGROUND_EMAILS = os.getenv('ENABLE_BACKGROUND_EMAILS', 'False').lower() == 'true'
+
 # Optional: Support phone for contact information in emails
 SUPPORT_PHONE = os.getenv('SUPPORT_PHONE', '')
 
@@ -245,3 +252,25 @@ if not DEBUG:
 
     # Serve static files with WhiteNoise in production
     STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# Basic logging to ensure output appears in Render/Gunicorn logs
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
+            'propagate': False,
+        },
+    },
+}

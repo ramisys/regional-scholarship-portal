@@ -11,9 +11,11 @@ All emails use HTML templates and are sent via configured SMTP backend.
 """
 
 import logging
+import threading
+import time
 from typing import List, Optional, Dict, Any
 from django.conf import settings
-from django.core.mail import EmailMultiAlternatives
+from django.core.mail import EmailMultiAlternatives, get_connection
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.core.validators import validate_email
@@ -124,29 +126,63 @@ class EmailService:
                 bcc=bcc_emails,
                 reply_to=reply_to,
             )
-            
+
             # Attach HTML alternative
             email.attach_alternative(html_message, "text/html")
-            
-            # Send email
-            result = email.send()
-            
-            if result > 0:
-                # Update log entry
-                log_entry.status = EmailLog.Status.SENT
-                log_entry.sent_at = timezone.now()
-                log_entry.save(update_fields=["status", "sent_at"])
-                
-                logger.info(f"Email sent successfully to {recipient_email} (Subject: {subject})")
+
+            # Inline send implementation so we can instrument and optionally
+            # perform the work in a background thread to avoid blocking gunicorn workers.
+            def _send_via_smtp(log_id=None):
+                start_ts = time.time()
+                conn = None
+                try:
+                    # Use Django's get_connection so EMAIL_TIMEOUT from settings is applied
+                    conn = get_connection(fail_silently=False, timeout=getattr(settings, 'EMAIL_TIMEOUT', 20))
+                    logger.debug(f"Opening SMTP connection for email log={log_entry.id} to {recipient_email}")
+                    conn.open()
+                    sent_count = conn.send_messages([email])
+                    duration = time.time() - start_ts
+                    if sent_count and sent_count > 0:
+                        log_entry.status = EmailLog.Status.SENT
+                        log_entry.sent_at = timezone.now()
+                        log_entry.save(update_fields=["status", "sent_at"]) 
+                        logger.info(f"Email sent to {recipient_email} (subject={subject}) in {duration:.2f}s")
+                        return True
+                    else:
+                        log_entry.status = EmailLog.Status.FAILED
+                        log_entry.error_message = "send_messages returned 0"
+                        log_entry.save(update_fields=["status", "error_message"])
+                        logger.error(f"send_messages returned 0 for {recipient_email}")
+                        return False
+                except Exception as ex:
+                    duration = time.time() - start_ts
+                    try:
+                        log_entry.status = EmailLog.Status.FAILED
+                        log_entry.error_message = str(ex)
+                        log_entry.save(update_fields=["status", "error_message"])
+                    except Exception:
+                        pass
+                    logger.exception(f"Exception sending email to {recipient_email} after {duration:.2f}s: {ex}")
+                    return False
+                finally:
+                    try:
+                        if conn:
+                            conn.close()
+                    except Exception:
+                        pass
+
+            # If background sending is enabled, spawn a thread and return immediately.
+            if getattr(settings, 'ENABLE_BACKGROUND_EMAILS', False):
+                logger.info(f"Queuing email to {recipient_email} for async delivery (log={log_entry.id})")
+                worker = threading.Thread(target=_send_via_smtp, args=(log_entry.id,))
+                worker.daemon = True
+                worker.start()
                 return True
-            else:
-                # Update log entry
-                log_entry.status = EmailLog.Status.FAILED
-                log_entry.error_message = "Email send returned 0"
-                log_entry.save(update_fields=["status", "error_message"])
-                
-                logger.error(f"Failed to send email to {recipient_email} (Subject: {subject})")
-                return False
+
+            # Otherwise send synchronously (may block current worker)
+            result = _send_via_smtp(log_entry.id)
+            
+            return bool(result)
                 
         except Exception as e:
             # Try to update log entry if it exists

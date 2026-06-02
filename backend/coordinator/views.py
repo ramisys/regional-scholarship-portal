@@ -11,6 +11,10 @@ from core.permissions import IsCoordinator
 from core.responses import error_response, success_response
 from core.email_service import EmailService
 from documents.models import UploadedDocument
+import logging
+from django.conf import settings
+
+logger = logging.getLogger(__name__)
 
 
 class CoordinatorApplicationListAPIView(APIView):
@@ -148,12 +152,15 @@ class CoordinatorNotifyMissingDocumentsAPIView(APIView):
 			)
 
 		try:
-			# Send email notification
-			success = EmailService.send_missing_documents_email(application, missing_documents)
-			
-			if success:
+			# Send email notification (may be queued to background worker)
+			sent_or_queued = EmailService.send_missing_documents_email(application, missing_documents)
+			if sent_or_queued:
+				msg = "Notification sent successfully"
+				if getattr(settings, 'ENABLE_BACKGROUND_EMAILS', False):
+					msg = "Notification queued for delivery"
+				logger.info(f"Notify missing documents: application={application.id} queued={getattr(settings, 'ENABLE_BACKGROUND_EMAILS', False)}")
 				return success_response(
-					"Notification sent successfully",
+					msg,
 					{
 						"application_id": application.id,
 						"student_email": application.applicant.email,
@@ -161,6 +168,7 @@ class CoordinatorNotifyMissingDocumentsAPIView(APIView):
 					}
 				)
 			else:
+				logger.error(f"Failed to send/queue notification for application={application.id}")
 				return error_response(
 					"Failed to send notification",
 					{"email": ["Failed to send email to student"]},
