@@ -55,6 +55,8 @@ export const ApplicationManagement: React.FC = () => {
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [approveLoading, setApproveLoading] = useState(false);
+  const [rejectLoading, setRejectLoading] = useState(false);
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
   const [selectedApplicationIds, setSelectedApplicationIds] = useState<number[]>([]);
   const [bulkAction, setBulkAction] = useState<'approved' | 'rejected' | 'under_review' | null>(null);
@@ -214,6 +216,7 @@ export const ApplicationManagement: React.FC = () => {
 
   const handleApprove = async (applicationId: string) => {
     setActionLoading(true);
+    setApproveLoading(true);
     try {
       await api.patch(`/dashboard/applications/${applicationId}/status`, {
         status: 'approved',
@@ -230,11 +233,13 @@ export const ApplicationManagement: React.FC = () => {
       toast.error(handleApiError(err));
     } finally {
       setActionLoading(false);
+      setApproveLoading(false);
     }
   };
 
   const handleReject = async (applicationId: string) => {
     setActionLoading(true);
+    setRejectLoading(true);
     try {
       await api.patch(`/dashboard/applications/${applicationId}/status`, {
         status: 'rejected',
@@ -251,6 +256,7 @@ export const ApplicationManagement: React.FC = () => {
       toast.error(handleApiError(err));
     } finally {
       setActionLoading(false);
+      setRejectLoading(false);
     }
   };
 
@@ -597,7 +603,7 @@ export const ApplicationManagement: React.FC = () => {
                   onClick={() => handleReject(selectedApplication.id)}
                   disabled={actionLoading}
                 >
-                  <ButtonLoader isLoading={actionLoading} loadingLabel="Rejecting...">
+                  <ButtonLoader isLoading={rejectLoading} loadingLabel="Rejecting...">
                     <span className="inline-flex items-center">
                       <XCircle className="mr-2 h-4 w-4" />
                       Reject
@@ -608,7 +614,7 @@ export const ApplicationManagement: React.FC = () => {
                   onClick={() => handleApprove(selectedApplication.id)}
                   disabled={actionLoading}
                 >
-                  <ButtonLoader isLoading={actionLoading} loadingLabel="Approving...">
+                  <ButtonLoader isLoading={approveLoading} loadingLabel="Approving...">
                     <span className="inline-flex items-center">
                       <CheckCircle className="mr-2 h-4 w-4" />
                       Approve
