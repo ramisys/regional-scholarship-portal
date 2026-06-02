@@ -1,4 +1,4 @@
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -39,6 +39,14 @@ const AuditLogs = lazy(() =>
   import('./pages/coordinator/AuditLogs').then((module) => ({ default: module.AuditLogs }))
 );
 
+const PageTitle: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => {
+  useEffect(() => {
+    document.title = `${title} | Regional Scholarship Portal`;
+  }, [title]);
+
+  return <>{children}</>;
+};
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -53,16 +61,16 @@ export default function App() {
           }
         >
           <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/login" element={<PageTitle title="Login"><Login /></PageTitle>} />
+            <Route path="/register" element={<PageTitle title="Register"><Register /></PageTitle>} />
+            <Route path="/forgot-password" element={<PageTitle title="Forgot Password"><ForgotPassword /></PageTitle>} />
 
             <Route
               path="/"
               element={
                 <ProtectedRoute>
                   <Layout>
-                    <Home />
+                    <PageTitle title="Home"><Home /></PageTitle>
                   </Layout>
                 </ProtectedRoute>
               }
@@ -73,7 +81,7 @@ export default function App() {
               element={
                 <ProtectedRoute allowedRoles={['student']}>
                   <Layout>
-                    <StudentDashboard />
+                    <PageTitle title="Student Dashboard"><StudentDashboard /></PageTitle>
                   </Layout>
                 </ProtectedRoute>
               }
@@ -84,7 +92,7 @@ export default function App() {
               element={
                 <ProtectedRoute allowedRoles={['student']}>
                   <Layout>
-                    <ApplicationForm />
+                    <PageTitle title="Application Form"><ApplicationForm /></PageTitle>
                   </Layout>
                 </ProtectedRoute>
               }
@@ -95,7 +103,7 @@ export default function App() {
               element={
                 <ProtectedRoute allowedRoles={['student']}>
                   <Layout>
-                    <DocumentUpload />
+                    <PageTitle title="Document Upload"><DocumentUpload /></PageTitle>
                   </Layout>
                 </ProtectedRoute>
               }
@@ -106,7 +114,7 @@ export default function App() {
               element={
                 <ProtectedRoute allowedRoles={['student']}>
                   <Layout>
-                    <ApplicationTracking />
+                    <PageTitle title="Application Tracking"><ApplicationTracking /></PageTitle>
                   </Layout>
                 </ProtectedRoute>
               }
@@ -117,7 +125,7 @@ export default function App() {
               element={
                 <ProtectedRoute allowedRoles={['student']}>
                   <Layout>
-                    <ApplicationDetail />
+                    <PageTitle title="Application Detail"><ApplicationDetail /></PageTitle>
                   </Layout>
                 </ProtectedRoute>
               }
@@ -128,7 +136,7 @@ export default function App() {
               element={
                 <ProtectedRoute allowedRoles={['coordinator']}>
                   <Layout>
-                    <CoordinatorDashboard />
+                    <PageTitle title="Coordinator Dashboard"><CoordinatorDashboard /></PageTitle>
                   </Layout>
                 </ProtectedRoute>
               }
@@ -139,7 +147,7 @@ export default function App() {
               element={
                 <ProtectedRoute allowedRoles={['coordinator']}>
                   <Layout>
-                    <ApplicationManagement />
+                    <PageTitle title="Application Management"><ApplicationManagement /></PageTitle>
                   </Layout>
                 </ProtectedRoute>
               }
@@ -150,7 +158,7 @@ export default function App() {
               element={
                 <ProtectedRoute allowedRoles={['coordinator']}>
                   <Layout>
-                    <AuditLogs />
+                    <PageTitle title="Audit Logs"><AuditLogs /></PageTitle>
                   </Layout>
                 </ProtectedRoute>
               }
