@@ -1,9 +1,9 @@
 import { setAccessToken, clearAccessToken } from '../app/utils/authStore';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api').replace(/\/+$/, '') + '/';
 
 export const register = async (payload) => {
-  const resp = await fetch(`${API_BASE_URL}/auth/register`, {
+  const resp = await fetch(`${API_BASE_URL}auth/register/`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -12,7 +12,7 @@ export const register = async (payload) => {
 };
 
 export const login = async ({ email, password }) => {
-  const resp = await fetch(`${API_BASE_URL}/auth/login`, {
+  const resp = await fetch(`${API_BASE_URL}auth/login/`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
@@ -31,7 +31,7 @@ export const login = async ({ email, password }) => {
 
 export const logout = async () => {
   try {
-    await fetch(`${API_BASE_URL}/auth/logout`, {
+    await fetch(`${API_BASE_URL}auth/logout/`, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -45,7 +45,7 @@ export const logout = async () => {
 };
 
 export const refreshToken = async () => {
-  const resp = await fetch(`${API_BASE_URL}/auth/refresh`, {
+  const resp = await fetch(`${API_BASE_URL}auth/refresh/`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },

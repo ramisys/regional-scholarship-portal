@@ -2,7 +2,7 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { startGlobalLoading, stopGlobalLoading } from '../components/loading';
 import { getAccessToken, setAccessToken, clearAccessToken } from './authStore';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api').replace(/\/+$/, '') + '/';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -74,7 +74,7 @@ api.interceptors.response.use(
 
       try {
         startGlobalLoading();
-        const refreshResponse = await authClient.post('/auth/refresh');
+        const refreshResponse = await authClient.post('/auth/refresh/');
         const refreshData = refreshResponse.data?.data ?? refreshResponse.data;
         const newAccessToken = refreshData?.access;
 
@@ -104,7 +104,7 @@ api.interceptors.response.use(
             return Promise.reject(error);
           }
 
-          const refreshResponse = await authClient.post('/auth/refresh', { refresh: refreshToken });
+          const refreshResponse = await authClient.post('/auth/refresh/', { refresh: refreshToken });
           const refreshData = refreshResponse.data?.data ?? refreshResponse.data;
           const newAccessToken = refreshData?.access;
           const newRefreshToken = refreshData?.refresh ?? refreshToken;
