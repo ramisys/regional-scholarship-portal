@@ -163,10 +163,12 @@ SIMPLE_JWT = {
     'UPDATE_LAST_LOGIN': True,
 }
 
+DEFAULT_FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
+
 CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOWED_ORIGINS = [
     origin.strip()
-    for origin in os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:5173').split(',')
+    for origin in os.getenv('CORS_ALLOWED_ORIGINS', DEFAULT_FRONTEND_URL).split(',')
     if origin.strip()
 ]
 
@@ -175,7 +177,13 @@ CORS_ALLOW_CREDENTIALS = True
 
 CSRF_TRUSTED_ORIGINS = [
     origin.strip()
-    for origin in os.getenv('CSRF_TRUSTED_ORIGINS', 'http://localhost:5173').split(',')
+    for origin in os.getenv('CSRF_TRUSTED_ORIGINS', DEFAULT_FRONTEND_URL).split(',')
+    if origin.strip()
+]
+
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    origin.strip()
+    for origin in os.getenv('CORS_ALLOWED_ORIGIN_REGEXES', '').split(',')
     if origin.strip()
 ]
 
