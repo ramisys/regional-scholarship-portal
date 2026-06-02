@@ -54,7 +54,7 @@ export const ApplicationTracking: React.FC = () => {
     setError('');
 
     try {
-      const response = await api.get('/student/applications');
+      const response = await api.get('/student/applications/');
       const applicationsData = unwrapData<Application[] | unknown>(response.data);
       const list = Array.isArray(applicationsData) ? applicationsData : [];
       setApplications(list);

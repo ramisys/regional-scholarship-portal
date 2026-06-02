@@ -67,7 +67,7 @@ export const DocumentUpload: React.FC = () => {
     setApplicationError('');
 
     try {
-      const response = await api.get('/student/applications');
+      const response = await api.get('/student/applications/');
       const applicationsData = unwrapData<StudentApplication[] | unknown>(response.data);
       const list = Array.isArray(applicationsData) ? applicationsData : [];
       const submittedApplications = list.filter((application) => application?.is_draft === false && application?.status !== 'draft');

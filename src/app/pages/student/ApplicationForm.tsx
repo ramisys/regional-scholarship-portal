@@ -63,7 +63,7 @@ export const ApplicationForm: React.FC = () => {
   const onSubmit = async (data: ApplicationFormData) => {
     setIsSubmitting(true);
     try {
-      await api.post('/student/applications', data);
+      await api.post('/student/applications/', data);
       // remove any local draft after successful submit
       try { localStorage.removeItem('application_draft'); } catch (e) {}
       toast.success('Application submitted successfully!');
@@ -81,7 +81,7 @@ export const ApplicationForm: React.FC = () => {
     const loadDraft = async () => {
       // Prefer server-saved draft, fall back to localStorage
       try {
-        const response = await api.get('/student/applications');
+        const response = await api.get('/student/applications/');
         const apps = response.data?.data ?? [];
         // find latest draft for this user
         const draftApp = Array.isArray(apps) ? apps.find((a: any) => a.is_draft) : null;
@@ -151,7 +151,7 @@ export const ApplicationForm: React.FC = () => {
 
       // Attempt to persist draft to server
       try {
-        await api.post('/student/applications/draft', formData);
+        await api.post('/student/applications/draft/', formData);
         toast.success('Draft saved to server');
       } catch (err) {
         // fallback to localStorage if server save fails

@@ -3,7 +3,7 @@ from rest_framework.routers import SimpleRouter
 
 from applications.views import ScholarshipApplicationViewSet
 
-router = SimpleRouter(trailing_slash=True)
+router = SimpleRouter(trailing_slash=False)
 router.register("", ScholarshipApplicationViewSet, basename="applications")
 
 urlpatterns = [
