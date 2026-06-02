@@ -147,17 +147,17 @@ Create these requests in the `02 - Protected / Authenticated` folder:
 }
 ```
 
-### D. Student dashboard
+### D. Student dashboard stats
 
 - Method: GET
-- URL: `{{base_url}}/api/student/`
+- URL: `{{base_url}}/api/student/stats/`
 - Header:
   - `Authorization: Bearer {{access_token}}`
 
-### E. Coordinator dashboard
+### E. Coordinator applications list
 
 - Method: GET
-- URL: `{{base_url}}/api/dashboard/`
+- URL: `{{base_url}}/api/dashboard/applications/`
 - Header:
   - `Authorization: Bearer {{access_token}}`
 

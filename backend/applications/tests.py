@@ -45,7 +45,7 @@ class ScholarshipApplicationDraftTests(APITestCase):
 			],
 		}
 
-		response = self.client.post("/api/student/applications/draft", payload, format="json")
+		response = self.client.post("/api/student/applications/draft/", payload, format="json")
 
 		self.assertEqual(response.status_code, 200)
 		self.assertTrue(response.data["success"])

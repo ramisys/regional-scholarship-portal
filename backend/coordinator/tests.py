@@ -44,7 +44,7 @@ class CoordinatorBulkProcessingTests(APITestCase):
 
     def test_bulk_approve_updates_multiple_applications_and_logs_action(self):
         response = self.client.post(
-            "/api/dashboard/applications/bulk-approve",
+            "/api/dashboard/applications/bulk-approve/",
             {"application_ids": [self.app_one.id, self.app_two.id]},
             format="json",
         )
@@ -67,7 +67,7 @@ class CoordinatorBulkProcessingTests(APITestCase):
 
     def test_bulk_status_update_skips_finalized_applications(self):
         response = self.client.patch(
-            "/api/dashboard/applications/bulk-status-update",
+            "/api/dashboard/applications/bulk-status-update/",
             {"application_ids": [self.app_one.id, self.app_finalized.id], "status": ScholarshipApplication.Status.REJECTED},
             format="json",
         )
@@ -87,7 +87,7 @@ class CoordinatorBulkProcessingTests(APITestCase):
     def test_bulk_endpoints_forbid_non_coordinator_users(self):
         self.client.force_authenticate(user=self.student)
         response = self.client.post(
-            "/api/dashboard/applications/bulk-approve",
+            "/api/dashboard/applications/bulk-approve/",
             {"application_ids": [self.app_one.id]},
             format="json",
         )
@@ -96,7 +96,7 @@ class CoordinatorBulkProcessingTests(APITestCase):
 
     def test_bulk_reject_with_invalid_id_returns_error_and_no_updates(self):
         response = self.client.post(
-            "/api/dashboard/applications/bulk-reject",
+            "/api/dashboard/applications/bulk-reject/",
             {"application_ids": [self.app_one.id, 99999]},
             format="json",
         )
