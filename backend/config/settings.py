@@ -164,12 +164,17 @@ SIMPLE_JWT = {
     'UPDATE_LAST_LOGIN': True,
 }
 
-DEFAULT_FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
+DEFAULT_FRONTEND_URL = os.getenv('DEFAULT_FRONTEND_URL', 'http://localhost:5173')
+FRONTEND_URL = os.getenv('FRONTEND_URL', DEFAULT_FRONTEND_URL if DEBUG else '')
+FRONTEND_RESET_PASSWORD_URL = os.getenv(
+    'FRONTEND_RESET_PASSWORD_URL',
+    f"{FRONTEND_URL}/reset-password" if FRONTEND_URL else ''
+)
 
 CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOWED_ORIGINS = [
     origin.strip()
-    for origin in os.getenv('CORS_ALLOWED_ORIGINS', DEFAULT_FRONTEND_URL).split(',')
+    for origin in os.getenv('CORS_ALLOWED_ORIGINS', FRONTEND_URL or DEFAULT_FRONTEND_URL).split(',')
     if origin.strip()
 ]
 
@@ -178,7 +183,7 @@ CORS_ALLOW_CREDENTIALS = True
 
 CSRF_TRUSTED_ORIGINS = [
     origin.strip()
-    for origin in os.getenv('CSRF_TRUSTED_ORIGINS', DEFAULT_FRONTEND_URL).split(',')
+    for origin in os.getenv('CSRF_TRUSTED_ORIGINS', FRONTEND_URL or DEFAULT_FRONTEND_URL).split(',')
     if origin.strip()
 ]
 
@@ -202,8 +207,6 @@ EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 SENDGRID_API_KEY = os.getenv('SENDGRID_API_KEY', '')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'no-reply@regional-scholarship.local')
-FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
-FRONTEND_RESET_PASSWORD_URL = os.getenv('FRONTEND_RESET_PASSWORD_URL', 'http://localhost:5173/reset-password')
 
 # Timeout (seconds) for SMTP connections
 EMAIL_TIMEOUT = int(os.getenv('EMAIL_TIMEOUT', '20'))
@@ -251,6 +254,12 @@ if not DEBUG:
 
     if not CLOUDINARY_STORAGE.get('CLOUD_NAME') or not CLOUDINARY_STORAGE.get('API_KEY') or not CLOUDINARY_STORAGE.get('API_SECRET'):
         raise ImproperlyConfigured('Cloudinary storage is enabled but CLOUDINARY_* environment variables are not set')
+
+    if not FRONTEND_URL:
+        raise ImproperlyConfigured('FRONTEND_URL must be set in production')
+
+    if not FRONTEND_RESET_PASSWORD_URL:
+        raise ImproperlyConfigured('FRONTEND_RESET_PASSWORD_URL must be set in production')
 
     # Serve static files with WhiteNoise in production
     STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
