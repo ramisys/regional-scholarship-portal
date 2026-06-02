@@ -12,7 +12,7 @@ User = get_user_model()
 class AuditServiceTests(TestCase):
 	def setUp(self):
 		self.factory = RequestFactory()
-		self.user = User.objects.create_user(email='test@example.com', password='testpass', role='coordinator')
+		self.user = User.objects.create_user(email='test@example.com', password='testpass', role='coordinator')  #nosec B106
 
 	def test_log_event_creates_record(self):
 		initial = AuditLog.objects.count()

@@ -11,7 +11,7 @@ class ScholarshipApplicationDraftTests(APITestCase):
 	def setUp(self):
 		self.user = User.objects.create_user(
 			email="student@example.com",
-			password="password123",
+			password="password123",  #nosec B106
 			role=User.Role.STUDENT,
 		)
 		self.client.force_authenticate(user=self.user)

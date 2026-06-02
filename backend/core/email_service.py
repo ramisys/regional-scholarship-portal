@@ -160,16 +160,16 @@ class EmailService:
                         log_entry.status = EmailLog.Status.FAILED
                         log_entry.error_message = str(ex)
                         log_entry.save(update_fields=["status", "error_message"])
-                    except Exception:
-                        pass
+                    except Exception as log_ex:
+                        logger.warning(f"Failed to update email log for {recipient_email}: {log_ex}")
                     logger.exception(f"Exception sending email to {recipient_email} after {duration:.2f}s: {ex}")
                     return False
                 finally:
                     try:
                         if conn:
                             conn.close()
-                    except Exception:
-                        pass
+                    except Exception as close_ex:
+                        logger.debug(f"Error closing SMTP connection for {recipient_email}: {close_ex}")
 
             # If background sending is enabled, spawn a thread and return immediately.
             if getattr(settings, 'ENABLE_BACKGROUND_EMAILS', False):
@@ -196,8 +196,8 @@ class EmailService:
                 log.status = EmailLog.Status.FAILED
                 log.error_message = str(e)
                 log.save(update_fields=["status", "error_message"])
-            except Exception:
-                pass
+            except Exception as log_ex:
+                logger.warning(f"Failed to update email log entry: {log_ex}")
             
             logger.error(
                 f"Error sending email to {recipient_email}: {str(e)}",

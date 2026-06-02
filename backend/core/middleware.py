@@ -45,8 +45,8 @@ class AuditMiddleware:
                     description=f"Server error response status {status} at {request.path}",
                     severity=AuditLog.Severity.CRITICAL,
                 )
-        except Exception:
+        except Exception as audit_ex:
             # Don't let auditing break responses
-            pass
+            logger.debug(f"Audit logging failed: {audit_ex}")
 
         return response

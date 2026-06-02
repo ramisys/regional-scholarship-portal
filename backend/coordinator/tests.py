@@ -9,12 +9,12 @@ class CoordinatorBulkProcessingTests(APITestCase):
     def setUp(self):
         self.coordinator = User.objects.create_user(
             email="coordinator@example.com",
-            password="password123",
+            password="password123",  #nosec B106
             role=User.Role.COORDINATOR,
         )
         self.student = User.objects.create_user(
             email="student@example.com",
-            password="password123",
+            password="password123",  #nosec B106
             role=User.Role.STUDENT,
         )
         self.client = APIClient()
