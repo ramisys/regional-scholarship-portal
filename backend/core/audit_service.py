@@ -35,15 +35,7 @@ def _extract_request_meta(request) -> Dict[str, Any]:
 
 def _create_entry(**kwargs):
     try:
-        # Use transaction.on_commit to avoid interfering with request lifecycle
-        def _write():
-            AuditLog.objects.create(**kwargs)
-
-        try:
-            transaction.on_commit(_write)
-        except Exception:
-            # Fallback if transaction manager not available
-            _write()
+        AuditLog.objects.create(**kwargs)
     except Exception:
         # Never bubble errors from auditing into application logic
         return None

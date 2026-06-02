@@ -81,22 +81,39 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
 
 class UserSerializer(serializers.ModelSerializer):
     profile = ApplicantProfileSerializer(required=False)
+    first_name = serializers.CharField(required=False, write_only=True, allow_blank=True)
+    last_name = serializers.CharField(required=False, write_only=True, allow_blank=True)
 
     class Meta:
         model = User
-        fields = ["id", "email", "role", "created_at", "profile"]
+        fields = ["id", "email", "role", "created_at", "profile", "first_name", "last_name"]
         read_only_fields = ["id", "created_at"]
 
     def update(self, instance, validated_data):
+        first_name = validated_data.pop("first_name", None)
+        last_name = validated_data.pop("last_name", None)
         profile_data = validated_data.pop("profile", None)
+
         for field, value in validated_data.items():
             setattr(instance, field, value)
         instance.save()
+
+        profile, _ = ApplicantProfile.objects.get_or_create(user=instance)
+
         if profile_data is not None:
-            profile, _ = ApplicantProfile.objects.get_or_create(user=instance)
             for field, value in profile_data.items():
                 setattr(profile, field, value)
-            profile.save()
+
+        full_name_parts = []
+        if first_name:
+            full_name_parts.append(first_name.strip())
+        if last_name:
+            full_name_parts.append(last_name.strip())
+
+        if full_name_parts:
+            profile.full_name = " ".join(full_name_parts)
+
+        profile.save()
         return instance
 
 
