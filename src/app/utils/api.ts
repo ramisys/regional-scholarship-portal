@@ -164,7 +164,13 @@ export const handleApiError = (error: unknown): string => {
     return error.message || 'An error occurred';
   }
   if (axios.isAxiosError(error)) {
-    return error.response?.data?.message || error.message || 'An error occurred';
+    if (error.response?.data?.message) {
+      return error.response.data.message;
+    }
+    if (error.code) {
+      return `${error.code}: ${error.message}`;
+    }
+    return error.message || 'An error occurred';
   }
   return 'An unexpected error occurred';
 };

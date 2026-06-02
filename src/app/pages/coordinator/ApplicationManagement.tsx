@@ -166,7 +166,7 @@ export const ApplicationManagement: React.FC = () => {
 
     setNotificationLoading(true);
     try {
-      await api.post(`/dashboard/applications/${selectedApplication.id}/notify-missing-documents`, {
+      await api.post(`/dashboard/applications/${selectedApplication.id}/notify-missing-documents/`, {
         missing_documents: selectedMissingDocs,
       });
       toast.success('Student notified about missing documents');
