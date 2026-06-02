@@ -3,14 +3,15 @@ from datetime import timedelta
 from pathlib import Path
 
 from dotenv import load_dotenv
-load_dotenv()
+
+# Load environment variables from backend/.env explicitly so production
+# deployments use the correct configuration even when current working
+# directory is not the backend directory.
+BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / '.env')
 
 # Support Render's managed Postgres via DATABASE_URL
 import dj_database_url
-
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
-
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-only-secret")
 DEBUG = os.getenv("DJANGO_DEBUG", "False").lower() == "true"
