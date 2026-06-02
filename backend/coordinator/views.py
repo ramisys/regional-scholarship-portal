@@ -7,6 +7,8 @@ from django.db.models import Count, Q
 
 from applications.models import ApplicationStatusHistory, ScholarshipApplication
 from applications.serializers import ScholarshipApplicationSerializer
+from coordinator.serializers import BulkApplicationActionSerializer, BulkStatusUpdateSerializer
+from coordinator.services import CoordinatorBulkApplicationService
 from core.permissions import IsCoordinator
 from core.responses import error_response, success_response
 from core.email_service import EmailService
@@ -70,6 +72,87 @@ class CoordinatorApplicationStatusUpdateAPIView(APIView):
 		)
 
 		return success_response("Application status updated", ScholarshipApplicationSerializer(application).data)
+
+
+class CoordinatorApplicationBulkApproveAPIView(APIView):
+	permission_classes = [IsAuthenticated, IsCoordinator]
+
+	def post(self, request):
+		serializer = BulkApplicationActionSerializer(data=request.data)
+		if not serializer.is_valid():
+			return error_response("Validation failed", serializer.errors, status.HTTP_400_BAD_REQUEST)
+
+		result = CoordinatorBulkApplicationService.bulk_update_status(
+			user=request.user,
+			application_ids=serializer.validated_data["application_ids"],
+			target_status=ScholarshipApplication.Status.APPROVED,
+			notes=serializer.validated_data.get("notes", "Bulk approve performed by coordinator"),
+			action_type="bulk_approve",
+		)
+
+		if not result.get("success"):
+			return error_response(result.get("message", "Bulk approve failed"), {"application_ids": result.get("missing_ids", [])}, status.HTTP_400_BAD_REQUEST)
+
+		return success_response("Bulk approve completed", {
+			"processed_count": result["processed_count"],
+			"failed_count": result["failed_count"],
+			"skipped": result.get("skipped", []),
+			"affected_application_ids": result.get("affected_application_ids", []),
+		})
+
+
+class CoordinatorApplicationBulkRejectAPIView(APIView):
+	permission_classes = [IsAuthenticated, IsCoordinator]
+
+	def post(self, request):
+		serializer = BulkApplicationActionSerializer(data=request.data)
+		if not serializer.is_valid():
+			return error_response("Validation failed", serializer.errors, status.HTTP_400_BAD_REQUEST)
+
+		result = CoordinatorBulkApplicationService.bulk_update_status(
+			user=request.user,
+			application_ids=serializer.validated_data["application_ids"],
+			target_status=ScholarshipApplication.Status.REJECTED,
+			notes=serializer.validated_data.get("notes", "Bulk reject performed by coordinator"),
+			action_type="bulk_reject",
+		)
+
+		if not result.get("success"):
+			return error_response(result.get("message", "Bulk reject failed"), {"application_ids": result.get("missing_ids", [])}, status.HTTP_400_BAD_REQUEST)
+
+		return success_response("Bulk reject completed", {
+			"processed_count": result["processed_count"],
+			"failed_count": result["failed_count"],
+			"skipped": result.get("skipped", []),
+			"affected_application_ids": result.get("affected_application_ids", []),
+		})
+
+
+class CoordinatorApplicationBulkStatusUpdateAPIView(APIView):
+	permission_classes = [IsAuthenticated, IsCoordinator]
+
+	def patch(self, request):
+		serializer = BulkStatusUpdateSerializer(data=request.data)
+		if not serializer.is_valid():
+			return error_response("Validation failed", serializer.errors, status.HTTP_400_BAD_REQUEST)
+
+		result = CoordinatorBulkApplicationService.bulk_update_status(
+			user=request.user,
+			application_ids=serializer.validated_data["application_ids"],
+			target_status=serializer.validated_data["status"],
+			notes=serializer.validated_data.get("notes", "Bulk status update performed by coordinator"),
+			action_type="bulk_status_update",
+		)
+
+		if not result.get("success"):
+			return error_response(result.get("message", "Bulk status update failed"), {"application_ids": result.get("missing_ids", [])}, status.HTTP_400_BAD_REQUEST)
+
+		return success_response("Bulk status update completed", {
+			"processed_count": result["processed_count"],
+			"failed_count": result["failed_count"],
+			"skipped": result.get("skipped", []),
+			"affected_application_ids": result.get("affected_application_ids", []),
+		})
 
 
 class CoordinatorStatsAPIView(APIView):

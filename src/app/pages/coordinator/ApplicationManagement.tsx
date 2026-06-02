@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import api, { handleApiError } from '../../utils/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
+import { Checkbox } from '../../components/ui/checkbox';
 import { Input } from '../../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import {
@@ -27,12 +28,12 @@ import { EmptyState } from '../../components/ui/empty-state';
 import { ButtonLoader, LoadingErrorState, PageLoader, SkeletonCard, SkeletonTable } from '../../components/loading';
 
 interface Application {
-  id: string;
+  id: number;
   applicantName: string;
   email: string;
   region: string;
   submittedDate: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'approved' | 'rejected' | 'under_review';
   documents: Document[];
 }
 
@@ -54,6 +55,10 @@ export const ApplicationManagement: React.FC = () => {
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [bulkActionLoading, setBulkActionLoading] = useState(false);
+  const [selectedApplicationIds, setSelectedApplicationIds] = useState<number[]>([]);
+  const [bulkAction, setBulkAction] = useState<'approved' | 'rejected' | 'under_review' | null>(null);
+  const [showBulkConfirmModal, setShowBulkConfirmModal] = useState(false);
   const [showMissingDocsModal, setShowMissingDocsModal] = useState(false);
   const [selectedMissingDocs, setSelectedMissingDocs] = useState<string[]>([]);
   const [notificationLoading, setNotificationLoading] = useState(false);
@@ -112,6 +117,94 @@ export const ApplicationManagement: React.FC = () => {
     }
 
     setFilteredApplications(filtered);
+  };
+
+  const isSelected = (applicationId: number) => selectedApplicationIds.includes(applicationId);
+
+  const toggleSelection = (applicationId: number) => {
+    setSelectedApplicationIds((prev) =>
+      prev.includes(applicationId)
+        ? prev.filter((id) => id !== applicationId)
+        : [...prev, applicationId]
+    );
+  };
+
+  const clearSelection = () => {
+    setSelectedApplicationIds([]);
+  };
+
+  const handleSelectAll = () => {
+    if (selectedApplicationIds.length === filteredApplications.length) {
+      clearSelection();
+      return;
+    }
+
+    setSelectedApplicationIds(filteredApplications.map((application) => application.id));
+  };
+
+  const openBulkConfirm = (action: 'approved' | 'rejected' | 'under_review') => {
+    if (selectedApplicationIds.length === 0) {
+      toast.error('Select at least one application to continue');
+      return;
+    }
+    setBulkAction(action);
+    setShowBulkConfirmModal(true);
+  };
+
+  const performBulkAction = async () => {
+    if (!bulkAction) {
+      return;
+    }
+
+    setBulkActionLoading(true);
+    try {
+      let response;
+      if (bulkAction === 'approved') {
+        response = await api.post('/dashboard/applications/bulk-approve', {
+          application_ids: selectedApplicationIds,
+        });
+      } else if (bulkAction === 'rejected') {
+        response = await api.post('/dashboard/applications/bulk-reject', {
+          application_ids: selectedApplicationIds,
+        });
+      } else {
+        response = await api.patch('/dashboard/applications/bulk-status-update', {
+          application_ids: selectedApplicationIds,
+          status: 'under_review',
+        });
+      }
+
+      const result = response.data?.data ?? response.data ?? response;
+      const processed = result.processed_count ?? 0;
+      const failed = result.failed_count ?? 0;
+
+      toast.success(
+        `Bulk ${bulkAction.replace('_', ' ')} completed: ${processed} processed, ${failed} skipped.`
+      );
+
+      setApplications((prev) =>
+        prev.map((app) =>
+          selectedApplicationIds.includes(app.id)
+            ? { ...app, status: bulkAction === 'under_review' ? 'under_review' : bulkAction }
+            : app
+        )
+      );
+      setFilteredApplications((prev) =>
+        prev.map((app) =>
+          selectedApplicationIds.includes(app.id)
+            ? { ...app, status: bulkAction === 'under_review' ? 'under_review' : bulkAction }
+            : app
+        )
+      );
+
+      clearSelection();
+      setShowBulkConfirmModal(false);
+      setBulkAction(null);
+    } catch (err) {
+      toast.error(handleApiError(err));
+    } finally {
+      setBulkActionLoading(false);
+    }
   };
 
   const handleViewDetails = (application: Application) => {
@@ -191,6 +284,7 @@ export const ApplicationManagement: React.FC = () => {
   const getStatusBadge = (status: string) => {
     const variants: Record<string, string> = {
       pending: 'bg-yellow-100 text-yellow-700',
+      under_review: 'bg-blue-100 text-blue-700',
       approved: 'bg-green-100 text-green-700',
       rejected: 'bg-red-100 text-red-700',
     };
@@ -259,17 +353,63 @@ export const ApplicationManagement: React.FC = () => {
                 <SelectContent>
                   <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="under_review">Under Review</SelectItem>
                   <SelectItem value="approved">Approved</SelectItem>
                   <SelectItem value="rejected">Rejected</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
+          {selectedApplicationIds.length > 0 && (
+            <div className="mt-4 flex flex-col gap-3 border-t border-gray-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-900">
+                  {selectedApplicationIds.length} selected
+                </p>
+                <p className="text-sm text-gray-500">
+                  Apply bulk actions to selected applications.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => openBulkConfirm('under_review')}
+                  disabled={bulkActionLoading}
+                >
+                  Mark Under Review
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => openBulkConfirm('rejected')}
+                  disabled={bulkActionLoading}
+                >
+                  Reject Selected
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => openBulkConfirm('approved')}
+                  disabled={bulkActionLoading}
+                >
+                  Approve Selected
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearSelection}
+                  disabled={bulkActionLoading}
+                >
+                  Clear Selection
+                </Button>
+              </div>
+            </div>
+          )}
         </CardHeader>
         <CardContent className="p-0">
           {isLoading ? (
             <PageLoader title="Loading applications" description="Fetching review queue and filters">
-              <SkeletonTable columns={6} rows={5} />
+              <SkeletonTable columns={7} rows={5} />
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 <div className="rounded-xl border border-gray-200 bg-white p-4">
                   <SkeletonCard compact />
@@ -291,6 +431,18 @@ export const ApplicationManagement: React.FC = () => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-12">
+                    <Checkbox
+                      checked={
+                        selectedApplicationIds.length === filteredApplications.length && filteredApplications.length > 0
+                          ? true
+                          : selectedApplicationIds.length > 0
+                          ? 'indeterminate'
+                          : false
+                      }
+                      onCheckedChange={handleSelectAll}
+                    />
+                  </TableHead>
                   <TableHead>Applicant Name</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Region</TableHead>
@@ -302,6 +454,12 @@ export const ApplicationManagement: React.FC = () => {
               <TableBody>
                 {filteredApplications.map((application) => (
                   <TableRow key={application.id}>
+                    <TableCell>
+                      <Checkbox
+                        checked={isSelected(application.id)}
+                        onCheckedChange={() => toggleSelection(application.id)}
+                      />
+                    </TableCell>
                     <TableCell className="font-medium">{application.applicantName}</TableCell>
                     <TableCell>{application.email}</TableCell>
                     <TableCell>{application.region}</TableCell>
@@ -326,6 +484,29 @@ export const ApplicationManagement: React.FC = () => {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={showBulkConfirmModal} onOpenChange={setShowBulkConfirmModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Bulk Action</DialogTitle>
+            <DialogDescription>
+              {bulkAction === 'approved' && `Approve ${selectedApplicationIds.length} selected applications?`}
+              {bulkAction === 'rejected' && `Reject ${selectedApplicationIds.length} selected applications?`}
+              {bulkAction === 'under_review' && `Mark ${selectedApplicationIds.length} selected applications as under review?`}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowBulkConfirmModal(false)} disabled={bulkActionLoading}>
+              Cancel
+            </Button>
+            <Button onClick={performBulkAction} disabled={bulkActionLoading}>
+              <ButtonLoader isLoading={bulkActionLoading} loadingLabel="Processing...">
+                Confirm
+              </ButtonLoader>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={showDetailsModal} onOpenChange={setShowDetailsModal}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">

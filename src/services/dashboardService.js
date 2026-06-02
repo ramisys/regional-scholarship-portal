@@ -22,3 +22,36 @@ export const updateDashboardApplicationStatus = async (id, payload) => {
   });
   return data;
 };
+
+export const bulkApproveApplications = async (applicationIds) => {
+  const { data } = await client.post(
+    "/applications/bulk-approve",
+    { application_ids: applicationIds },
+    {
+      headers: getAuthHeader(),
+    }
+  );
+  return data;
+};
+
+export const bulkRejectApplications = async (applicationIds) => {
+  const { data } = await client.post(
+    "/applications/bulk-reject",
+    { application_ids: applicationIds },
+    {
+      headers: getAuthHeader(),
+    }
+  );
+  return data;
+};
+
+export const bulkUpdateApplicationStatus = async (applicationIds, status) => {
+  const { data } = await client.patch(
+    "/applications/bulk-status-update",
+    { application_ids: applicationIds, status },
+    {
+      headers: getAuthHeader(),
+    }
+  );
+  return data;
+};
