@@ -196,6 +196,7 @@ The `backend/Dockerfile` builds the frontend first, installs Python dependencies
 ## Notes
 
 - The backend supports `DATABASE_URL` if provided, and will use it in place of individual `POSTGRES_*` values.
+- For step-by-step usage instructions, see [docs/USER_GUIDE.md](docs/USER_GUIDE.md).
 - In production, `DJANGO_DEBUG` should be set to `False` and Cloudinary variables must be configured.
 - The backend uses WhiteNoise to serve static assets when `DEBUG=False`.
 
