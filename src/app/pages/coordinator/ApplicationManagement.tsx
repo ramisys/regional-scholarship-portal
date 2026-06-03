@@ -121,9 +121,22 @@ export const ApplicationManagement: React.FC = () => {
     setFilteredApplications(filtered);
   };
 
+  const canSelectApplication = (status: Application['status']) =>
+    status === 'pending' || status === 'under_review';
+
+  const eligibleApplications = filteredApplications.filter((application) =>
+    canSelectApplication(application.status)
+  );
+
   const isSelected = (applicationId: number) => selectedApplicationIds.includes(applicationId);
 
   const toggleSelection = (applicationId: number) => {
+    const targetApplication = filteredApplications.find((application) => application.id === applicationId);
+
+    if (!targetApplication || !canSelectApplication(targetApplication.status)) {
+      return;
+    }
+
     setSelectedApplicationIds((prev) =>
       prev.includes(applicationId)
         ? prev.filter((id) => id !== applicationId)
@@ -136,19 +149,25 @@ export const ApplicationManagement: React.FC = () => {
   };
 
   const handleSelectAll = () => {
-    if (selectedApplicationIds.length === filteredApplications.length) {
+    if (selectedApplicationIds.length === eligibleApplications.length) {
       clearSelection();
       return;
     }
 
-    setSelectedApplicationIds(filteredApplications.map((application) => application.id));
+    setSelectedApplicationIds(eligibleApplications.map((application) => application.id));
   };
 
   const openBulkConfirm = (action: 'approved' | 'rejected' | 'under_review') => {
-    if (selectedApplicationIds.length === 0) {
-      toast.error('Select at least one application to continue');
+    const eligibleSelectedIds = selectedApplicationIds.filter((id) =>
+      filteredApplications.some((application) => application.id === id && canSelectApplication(application.status))
+    );
+
+    if (eligibleSelectedIds.length === 0) {
+      toast.error('Select at least one pending or under-review application to continue');
       return;
     }
+
+    setSelectedApplicationIds(eligibleSelectedIds);
     setBulkAction(action);
     setShowBulkConfirmModal(true);
   };
@@ -440,13 +459,14 @@ export const ApplicationManagement: React.FC = () => {
                   <TableHead className="w-12">
                     <Checkbox
                       checked={
-                        selectedApplicationIds.length === filteredApplications.length && filteredApplications.length > 0
+                        selectedApplicationIds.length === eligibleApplications.length && eligibleApplications.length > 0
                           ? true
                           : selectedApplicationIds.length > 0
                           ? 'indeterminate'
                           : false
                       }
                       onCheckedChange={handleSelectAll}
+                      disabled={eligibleApplications.length === 0}
                     />
                   </TableHead>
                   <TableHead>Applicant Name</TableHead>
@@ -464,6 +484,7 @@ export const ApplicationManagement: React.FC = () => {
                       <Checkbox
                         checked={isSelected(application.id)}
                         onCheckedChange={() => toggleSelection(application.id)}
+                        disabled={!canSelectApplication(application.status)}
                       />
                     </TableCell>
                     <TableCell className="font-medium">{application.applicantName}</TableCell>
